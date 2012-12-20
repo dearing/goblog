@@ -25,15 +25,13 @@ func push(filename string) error {
 	}
 
 	client.Set(filename, string(blackfriday.MarkdownCommon(body)))
-	log.Printf("pushed %s", filename)
+	//log.Printf("pushed %s", filename)
 	return err
 }
 
 func pushall(folder string) error {
 
 	names, _ := ioutil.ReadDir("articles")
-
-	log.Printf("%v", names)
 
 	for _, element := range names {
 		body, _ := ioutil.ReadFile("articles/" + element.Name())
@@ -47,13 +45,12 @@ func pushall(folder string) error {
 func load(title string) (*Article, error) {
 
 	key := fmt.Sprintf("articles/" + title + ".text")
-	log.Printf("%v", key)
+
 	if !client.Exists(key).Val() {
 		log.Printf("no found: %v", key)
 	}
 
 	output := client.Get(key).Val()
-	log.Printf("%v", output)
 	return &Article{Title: title, Body: template.HTML(output)}, nil
 }
 
@@ -61,32 +58,30 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 	title := "table of contents"
 
 	keys := client.Keys("*")
-	log.Printf("%v", keys.Val())
-	for _, element := range keys.Val() {
-		log.Printf("%v", element)
-	}
 
-	names, err := ioutil.ReadDir("articles")
-	if err != nil {
-		log.Printf("tocHandler: %v", err)
-		return
-	}
+	/*
+			names, err := ioutil.ReadDir("articles")
+			if err != nil {
+				log.Printf("tocHandler: %v", err)
+				return
+			}
 
-	//t, err := template.ParseFiles("templates/common.html", "templates/toc.html")
-	if err != nil {
-		http.Redirect(w, r, "/", http.StatusFound)
-		log.Printf("toc-t : %v", err)
-		return
-	}
+
+		//t, err := template.ParseFiles("templates/common.html", "templates/toc.html")
+		if err != nil {
+			http.Redirect(w, r, "/", http.StatusFound)
+			log.Printf("toc-t : %v", err)
+			return
+		}
+	*/
 
 	templates.ExecuteTemplate(w, "head", title)
 	templates.ExecuteTemplate(w, "bar", nil)
 	templates.ExecuteTemplate(w, "toc-head", nil)
-	for _, element := range names {
-		if !element.IsDir() {
-			url := strings.Replace(element.Name(), ".text", "", 1)
-			templates.ExecuteTemplate(w, "toc-item", url)
-		}
+	for _, element := range keys.Val() {
+		url := strings.Replace(element, ".text", "", 1)
+		url = strings.Replace(url, "articles/", "", 1)
+		templates.ExecuteTemplate(w, "toc-item", url)
 	}
 
 	templates.ExecuteTemplate(w, "toc-foot", nil)
