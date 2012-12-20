@@ -1,13 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
-	//"time"
 )
 
 type Article struct {
@@ -17,19 +17,47 @@ type Article struct {
 
 func loadPage(title string) (*Article, error) {
 	filename := title + ".txt"
-	fmt.Printf("loading article %s\n", filename)
+
+	log.Printf("read %s\n", filename)
+
 	body, err := ioutil.ReadFile("articles/" + filename)
 	if err != nil {
 		return nil, err
 	}
-	return &Article{Title: title, Body: template.HTML(string(body))}, nil
+
+	var article Article
+	err = json.Unmarshal([]byte(body), &article)
+	if err != nil {
+		log.Printf("json_error: %v\n", err)
+		return nil, err
+	}
+
+	//return &Article{Title: title, Body: template.HTML(string(body))}, nil
+	fmt.Printf("%v\n", &article)
+	return &article, nil
 }
 
-func viewHandler(w http.ResponseWriter, r *http.Request) {
+func articleHandler(w http.ResponseWriter, r *http.Request) {
 	title := r.URL.Path[len("/article/"):]
-	p, _ := loadPage(title)
-	t, _ := template.ParseFiles("templates/article.html")
-	t.Execute(w, p)
+
+	p, err := loadPage(title)
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusFound)
+		log.Printf("error : %v\n", err)
+		return
+	}
+
+	t, err := template.ParseFiles("templates/common.html", "templates/article.html")
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusFound)
+		log.Printf("error : %v\n", err)
+		return
+	}
+
+	t.ExecuteTemplate(w, "head", p)
+	t.ExecuteTemplate(w, "bar", p)
+	t.ExecuteTemplate(w, "article", p)
+	t.ExecuteTemplate(w, "foot", p)
 }
 
 var host = flag.String("host", ":8080", "host to bind to")
@@ -40,7 +68,7 @@ func main() {
 	flag.Parse()
 
 	http.Handle("/", http.FileServer(http.Dir(*root)))
-	http.HandleFunc("/article/", viewHandler)
+	http.HandleFunc("/article/", articleHandler)
 
 	fmt.Printf("listening on %s // root=%s\r\n", *host, *root)
 
