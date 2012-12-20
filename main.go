@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/russross/blackfriday"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -15,7 +16,7 @@ type Article struct {
 }
 
 func load(title string) (*Article, error) {
-	filename := title + ".txt"
+	filename := title + ".text"
 
 	log.Printf("read %s\n", filename)
 
@@ -24,7 +25,33 @@ func load(title string) (*Article, error) {
 		return nil, err
 	}
 
-	return &Article{Title: title, Body: template.HTML(string(body))}, nil
+	output := blackfriday.MarkdownCommon(body)
+
+	return &Article{Title: title, Body: template.HTML(output)}, nil
+}
+
+func tocHandler(w http.ResponseWriter, r *http.Request) {
+	//title := "table of contents"
+
+	names, err := ioutil.ReadDir("articles")
+	if err != nil {
+		log.Printf("tocHandler: %v", err)
+		return
+	}
+
+	t, err := template.ParseFiles("templates/common.html", "templates/toc.html")
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusFound)
+		log.Printf("toc-t : %v", err)
+		return
+	}
+
+	for _, element := range names {
+		if !element.IsDir() {
+			log.Printf("toc: %s", element.Name())
+			t.ExecuteTemplate(w, "toc", element)
+		}
+	}
 }
 
 func articleHandler(w http.ResponseWriter, r *http.Request) {
@@ -59,6 +86,7 @@ func main() {
 
 	http.Handle("/", http.FileServer(http.Dir(*root)))
 	http.HandleFunc("/article/", articleHandler)
+	http.HandleFunc("/toc/", tocHandler)
 
 	fmt.Printf("listening on %s // root=%s\r\n", *host, *root)
 
