@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"html/template"
@@ -15,7 +14,7 @@ type Article struct {
 	Body  template.HTML
 }
 
-func loadPage(title string) (*Article, error) {
+func load(title string) (*Article, error) {
 	filename := title + ".txt"
 
 	log.Printf("read %s\n", filename)
@@ -25,22 +24,13 @@ func loadPage(title string) (*Article, error) {
 		return nil, err
 	}
 
-	var article Article
-	err = json.Unmarshal([]byte(body), &article)
-	if err != nil {
-		log.Printf("json_error: %v\n", err)
-		return nil, err
-	}
-
-	//return &Article{Title: title, Body: template.HTML(string(body))}, nil
-	fmt.Printf("%v\n", &article)
-	return &article, nil
+	return &Article{Title: title, Body: template.HTML(string(body))}, nil
 }
 
 func articleHandler(w http.ResponseWriter, r *http.Request) {
 	title := r.URL.Path[len("/article/"):]
 
-	p, err := loadPage(title)
+	p, err := load(title)
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusFound)
 		log.Printf("error : %v\n", err)
