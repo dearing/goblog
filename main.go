@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type Article struct {
@@ -31,7 +32,7 @@ func load(title string) (*Article, error) {
 }
 
 func tocHandler(w http.ResponseWriter, r *http.Request) {
-	//title := "table of contents"
+	title := "table of contents"
 
 	names, err := ioutil.ReadDir("articles")
 	if err != nil {
@@ -46,12 +47,17 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	t.ExecuteTemplate(w, "head", title)
+	t.ExecuteTemplate(w, "bar", nil)
+	t.ExecuteTemplate(w, "toc-head", nil)
 	for _, element := range names {
 		if !element.IsDir() {
-			log.Printf("toc: %s", element.Name())
-			t.ExecuteTemplate(w, "toc", element)
+			url := strings.Replace(element.Name(), ".text", "", 1)
+			t.ExecuteTemplate(w, "toc-item", url)
 		}
 	}
+
+	t.ExecuteTemplate(w, "toc-foot", nil)
 }
 
 func articleHandler(w http.ResponseWriter, r *http.Request) {
