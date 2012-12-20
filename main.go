@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/russross/blackfriday"
+	"github.com/vmihailenco/redis"
 	"html/template"
 	"io/ioutil"
 	"log"
