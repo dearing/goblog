@@ -1,6 +1,6 @@
 blog
 ====
-** still in development **
+**still in development**
 
 blogging with go, markdown and redis
 
@@ -14,7 +14,7 @@ filewatcher then pushes modified documents as they are created or modified.
 
 try it out
 ---
-** Templates at this time have hardcoded names in the source so it will fail until I provide some basic ones for testing.**
+**Templates at this time have hardcoded names in the source so it will fail until I provide some basic ones for testing.**
 ```
 go get github.com/dearing/blog
 blog --help
