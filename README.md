@@ -22,7 +22,7 @@ blog --help
 Usage of blog:
   -host=":8080": host to bind to
   -rdb=-1: redis db index
-  -rh="192.168.1.150:6379": redis host
+  -rh="localhost:6379": redis host
   -root="wwwroot": webserver document root folder
   -rp="": redis password
   -verbose=false: log common operations and not just errors
