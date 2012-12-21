@@ -24,7 +24,7 @@ type Article struct {
 var host = flag.String("host", ":8080", "host to bind to")
 var root = flag.String("root", "wwwroot", "webserver document root folder")
 
-var redis_host = flag.String("rh", "192.168.1.150:6379", "redis host")
+var redis_host = flag.String("rh", "localhost:6379", "redis host")
 var redis_pass = flag.String("rp", "", "redis password")
 var redis_db = flag.Int64("rdb", -1, "redis db index")
 
