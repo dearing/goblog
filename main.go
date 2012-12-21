@@ -1,102 +1,98 @@
+/*
+	Jacob Dearing
+*/
 package main
 
 import (
 	"flag"
 	"fmt"
-	"github.com/russross/blackfriday"
+	"github.com/howeyc/fsnotify"
+	"github.com/vmihailenco/redis"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
 )
 
+// Represents and blog post.
+// In the future timestamps, author information etc will be implemented.
 type Article struct {
-	Title string
-	Body  template.HTML
+	Title string        // just the title
+	Body  template.HTML // we consider the storage to be safe enough to generate HTML from (after markdown processing)
 }
 
-func load(title string) (*Article, error) {
-	filename := title + ".text"
-
-	log.Printf("read %s\n", filename)
-
-	body, err := ioutil.ReadFile("articles/" + filename)
-	if err != nil {
-		return nil, err
-	}
-
-	output := blackfriday.MarkdownCommon(body)
-
-	return &Article{Title: title, Body: template.HTML(output)}, nil
-}
-
-func tocHandler(w http.ResponseWriter, r *http.Request) {
-	title := "table of contents"
-
-	names, err := ioutil.ReadDir("articles")
-	if err != nil {
-		log.Printf("tocHandler: %v", err)
-		return
-	}
-
-	t, err := template.ParseFiles("templates/common.html", "templates/toc.html")
-	if err != nil {
-		http.Redirect(w, r, "/", http.StatusFound)
-		log.Printf("toc-t : %v", err)
-		return
-	}
-
-	t.ExecuteTemplate(w, "head", title)
-	t.ExecuteTemplate(w, "bar", nil)
-	t.ExecuteTemplate(w, "toc-head", nil)
-	for _, element := range names {
-		if !element.IsDir() {
-			url := strings.Replace(element.Name(), ".text", "", 1)
-			t.ExecuteTemplate(w, "toc-item", url)
-		}
-	}
-
-	t.ExecuteTemplate(w, "toc-foot", nil)
-}
-
-func articleHandler(w http.ResponseWriter, r *http.Request) {
-	title := r.URL.Path[len("/article/"):]
-
-	p, err := load(title)
-	if err != nil {
-		http.Redirect(w, r, "/", http.StatusFound)
-		log.Printf("error : %v\n", err)
-		return
-	}
-
-	t, err := template.ParseFiles("templates/common.html", "templates/article.html")
-	if err != nil {
-		http.Redirect(w, r, "/", http.StatusFound)
-		log.Printf("error : %v\n", err)
-		return
-	}
-
-	t.ExecuteTemplate(w, "head", p)
-	t.ExecuteTemplate(w, "bar", p)
-	t.ExecuteTemplate(w, "article", p)
-	t.ExecuteTemplate(w, "foot", p)
-}
-
+// ARGS
 var host = flag.String("host", ":8080", "host to bind to")
 var root = flag.String("root", "wwwroot", "webserver document root folder")
 
+var redis_host = flag.String("rh", "192.168.1.150:6379", "redis host")
+var redis_pass = flag.String("rp", "", "redis password")
+var redis_db = flag.Int64("rdb", -1, "redis db index")
+
+var verbose = flag.Bool("verbose", false, "log common operations and not just errors")
+
+// MISC
+var templates = template.Must(template.ParseGlob("templates/*.html"))
+
+//var client = redis.NewTCPClient(*redis_host, *redis_pass, *redis_db)
+var client *redis.Client
+
+//  MAIN
 func main() {
 
+	// First we parse our env args for use down road.
 	flag.Parse()
 
+	// Initialize contact with the server using our arguments or defaults.
+	client = redis.NewTCPClient(*redis_host, *redis_pass, *redis_db)
+
+	// If we can ping wihtout an error then we can move on.
+	if ping := client.Ping(); ping.Err() != nil {
+		log.Panicf("%v", ping.Err())
+	}
+
+	defer client.Close()
+
+	// Straight from the author of github.com/howeyc/fsnotify:
+	// Initialize our watcher and check for any errors...
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Spin up a goroutine that watches two channels:
+	// watcher.Event for events of [Delete, Modify, Moved, New] and
+	// watcher.Error for any errors behind the scenes.
+	go func() {
+		for {
+			select {
+			case ev := <-watcher.Event:
+				if *verbose {
+					log.Println("event:", ev)
+				}
+				push(ev.Name)
+			case err := <-watcher.Error:
+				log.Println("error:", err)
+			}
+		}
+	}()
+
+	// Watch our articles for changes
+	err = watcher.Watch("articles")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer watcher.Close()
+
+	// Push our working articles to our redis db
+	pushall("articles")
+
+	//	Setup our handlers and get cracking...
 	http.Handle("/", http.FileServer(http.Dir(*root)))
 	http.HandleFunc("/article/", articleHandler)
 	http.HandleFunc("/toc/", tocHandler)
 
-	fmt.Printf("listening on %s // root=%s\r\n", *host, *root)
+	fmt.Printf("listening on %s // root=%s\n", *host, *root)
 
-	if err := http.ListenAndServe(*host, nil); err != nil {
-		log.Printf("error : %v", err)
+	if err = http.ListenAndServe(*host, nil); err != nil {
+		log.Fatalf("%v", err)
 	}
 }
