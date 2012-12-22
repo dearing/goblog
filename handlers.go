@@ -1,6 +1,10 @@
+/*
+	Jacob Dearing
+*/
 package main
 
 import (
+	"html/template"
 	"log"
 	"net/http"
 	"strings"
@@ -13,18 +17,25 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 
 	keys := client.Keys("articles/*")
 
-	templates.ExecuteTemplate(w, "head", title)
-	templates.ExecuteTemplate(w, "bar", nil)
-	templates.ExecuteTemplate(w, "toc-head", nil)
+	t, err := template.ParseFiles("templates/common.html", "templates/toc.html")
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusNotFound)
+		log.Printf("error : %v\n", err)
+		return
+	}
+
+	t.ExecuteTemplate(w, "head", title)
+	t.ExecuteTemplate(w, "bar", nil)
+	t.ExecuteTemplate(w, "toc-head", nil)
 
 	// for each key we add a list element
 	for _, element := range keys.Val() {
-		url := strings.Replace(element, ".text", "", 1)
+		url := strings.Replace(element, ".md", "", 1)
 		url = strings.Replace(url, "articles/", "", 1)
-		templates.ExecuteTemplate(w, "toc-item", url)
+		t.ExecuteTemplate(w, "toc-item", url)
 	}
 
-	templates.ExecuteTemplate(w, "toc-foot", nil)
+	t.ExecuteTemplate(w, "toc-foot", nil)
 }
 
 // Load and display an article from our redis db.
@@ -32,22 +43,22 @@ func articleHandler(w http.ResponseWriter, r *http.Request) {
 	// Extract a meaningful title from the path.
 	title := r.URL.Path[len("/article/"):]
 
-	p, err := pull("articles/" + title + ".text")
+	p, err := pull("articles/" + title + ".md")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)
 		return
 	}
 
-	//t, err := template.ParseFiles("templates/common.html", "templates/article.html")
+	t, err := template.ParseFiles("templates/common.html", "templates/article.html")
 	if err != nil {
-		http.Redirect(w, r, "/", http.StatusFound)
+		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)
 		return
 	}
 
-	templates.ExecuteTemplate(w, "head", p)
-	templates.ExecuteTemplate(w, "bar", p)
-	templates.ExecuteTemplate(w, "article", p)
-	templates.ExecuteTemplate(w, "foot", p)
+	t.ExecuteTemplate(w, "head", p)
+	t.ExecuteTemplate(w, "bar", p)
+	t.ExecuteTemplate(w, "article", p)
+	t.ExecuteTemplate(w, "foot", p)
 }

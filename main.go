@@ -31,9 +31,7 @@ var redis_db = flag.Int64("rdb", -1, "redis db index")
 var verbose = flag.Bool("verbose", false, "log common operations and not just errors")
 
 // MISC
-var templates = template.Must(template.ParseGlob("templates/*.html"))
-
-//var client = redis.NewTCPClient(*redis_host, *redis_pass, *redis_db)
+//var templates = template.Must(template.ParseGlob("templates/*.html"))
 var client *redis.Client
 
 //  MAIN
