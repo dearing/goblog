@@ -66,3 +66,17 @@ func pull(title string) (*Article, error) {
 	output := client.Get(key).Val()
 	return &Article{Title: title, Body: template.HTML(output)}, nil
 }
+
+func drop(title string) error {
+	test := client.Del(title)
+	if test.Err() != nil {
+		if *verbose {
+			log.Printf("unable to del %s", title)
+			return test.Err()
+		}
+	}
+	if *verbose {
+		log.Printf("removed %s", title)
+	}
+	return nil
+}

@@ -64,9 +64,25 @@ func main() {
 			select {
 			case ev := <-watcher.Event:
 				if *verbose {
-					log.Println("event:", ev)
+					log.Printf("event:%v", ev)
 				}
-				push(ev.Name)
+				if ev.IsModify() || ev.IsCreate() {
+					push(ev.Name)
+				}
+				if ev.IsDelete() {
+					drop(ev.Name)
+				}
+
+				// TODO: Need to work out how to know the old name and the new.
+				// If it isn't supported in fsnotify then I'll need to make
+				// a routine scan the present state and compare that to the
+				// database.
+				/*
+					if ev.IsRename() {
+						push(ev.Name)
+					}
+				*/
+
 			case err := <-watcher.Error:
 				log.Println("error:", err)
 			}
