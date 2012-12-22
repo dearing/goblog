@@ -41,9 +41,32 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 // Load and display an article from our redis db.
 func articleHandler(w http.ResponseWriter, r *http.Request) {
 	// Extract a meaningful title from the path.
-	title := r.URL.Path[len("/article/"):]
+	title := r.URL.Path[len("/blog/"):]
 
 	p, err := pull("articles/" + title + ".md")
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusNotFound)
+		log.Printf("error : %v\n", err)
+		return
+	}
+
+	t, err := template.ParseFiles("templates/common.html", "templates/article.html")
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusNotFound)
+		log.Printf("error : %v\n", err)
+		return
+	}
+
+	t.ExecuteTemplate(w, "head", p)
+	t.ExecuteTemplate(w, "bar", p)
+	t.ExecuteTemplate(w, "article", p)
+	t.ExecuteTemplate(w, "foot", p)
+}
+
+// Load and display an article from our redis db.
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+
+	p, err := pull("articles/index.md")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)
