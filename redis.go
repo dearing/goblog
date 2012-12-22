@@ -41,7 +41,7 @@ func pushall(folder string) error {
 	// for each file in the folder that, isn't a folder itself, push the parsed contents up
 	for _, file := range files {
 		if !file.IsDir() {
-			err := push("articles/" + file.Name())
+			err := push(fmt.Sprintf("%s/%s", *articles, file.Name()))
 			if err != nil {
 				log.Println(err)
 			}

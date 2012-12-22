@@ -15,9 +15,9 @@ import (
 func tocHandler(w http.ResponseWriter, r *http.Request) {
 	title := "table of contents"
 
-	keys := client.Keys("articles/*")
+	keys := client.Keys(*articles + "/*")
 
-	t, err := template.ParseFiles("templates/common.html", "templates/toc.html")
+	t, err := template.ParseGlob(*templates + "/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)
@@ -30,9 +30,12 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 
 	// for each key we add a list element
 	for _, element := range keys.Val() {
-		url := strings.Replace(element, ".md", "", 1)
-		url = strings.Replace(url, "articles/", "", 1)
-		t.ExecuteTemplate(w, "toc-item", url)
+		if element != *articles+"/index.md" {
+
+			url := strings.Replace(element, ".md", "", 1)
+			url = strings.Replace(url, *articles+"/", "", 1)
+			t.ExecuteTemplate(w, "toc-item", url)
+		}
 	}
 
 	t.ExecuteTemplate(w, "toc-foot", nil)
@@ -50,7 +53,7 @@ func articleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t, err := template.ParseFiles("templates/common.html", "templates/article.html")
+	t, err := template.ParseGlob(*templates + "/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)
@@ -66,14 +69,15 @@ func articleHandler(w http.ResponseWriter, r *http.Request) {
 // Load and display an article from our redis db.
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
-	p, err := pull("articles/index.md")
+	p, err := pull(*articles + "/index.md")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)
 		return
 	}
 
-	t, err := template.ParseFiles("templates/common.html", "templates/article.html")
+	//t, err := template.ParseFiles("templates/common.html", "templates/article.html")
+	t, err := template.ParseGlob(*templates + "/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)

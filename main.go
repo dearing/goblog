@@ -21,6 +21,9 @@ type Article struct {
 }
 
 // ARGS
+var articles = flag.String("articles", "articles", "markdown posts")
+var templates = flag.String("templates", "templates", "templates posts")
+
 var host = flag.String("host", ":8080", "host to bind to")
 var root = flag.String("root", "wwwroot", "webserver document root folder")
 
@@ -90,14 +93,14 @@ func main() {
 	}()
 
 	// Watch our articles for changes
-	err = watcher.Watch("articles")
+	err = watcher.Watch(*articles)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer watcher.Close()
 
 	// Push our working articles to our redis db
-	pushall("articles")
+	pushall(*articles)
 
 	//	Setup our handlers and get cracking...
 	http.Handle("/static/", http.FileServer(http.Dir(*root)))
