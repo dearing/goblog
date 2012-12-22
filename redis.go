@@ -10,23 +10,26 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
+	"strings"
 )
 
 // Push a files contents up to the redis db after processing as markdown
 func push(filename string) error {
-	body, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return err
-	}
+	if strings.HasSuffix(filename, *suffix) {
+		body, err := ioutil.ReadFile(filename)
+		if err != nil {
+			return err
+		}
 
-	test := client.Set(filename, string(blackfriday.MarkdownCommon(body)))
+		test := client.Set(filename, string(blackfriday.MarkdownCommon(body)))
 
-	if test.Err() != nil {
-		return test.Err()
-	}
+		if test.Err() != nil {
+			return test.Err()
+		}
 
-	if *verbose {
-		log.Printf("pushed %s", filename)
+		if *verbose {
+			log.Printf("pushed %s", filename)
+		}
 	}
 
 	return nil

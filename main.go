@@ -23,6 +23,7 @@ type Article struct {
 // ARGS
 var articles = flag.String("articles", "articles", "markdown posts")
 var templates = flag.String("templates", "templates", "templates posts")
+var suffix = flag.String("suffix", ".md", "filtered extension")
 
 var host = flag.String("host", ":8080", "host to bind to")
 var root = flag.String("root", "wwwroot", "webserver document root folder")
