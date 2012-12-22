@@ -25,12 +25,12 @@ var articles = flag.String("articles", "articles", "markdown posts")
 var templates = flag.String("templates", "templates", "templates posts")
 var suffix = flag.String("suffix", ".md", "filtered extension")
 
-var host = flag.String("host", ":8080", "host to bind to")
-var root = flag.String("root", "wwwroot", "webserver document root folder")
+var host = flag.String("wwwhost", ":8080", "host to bind to")
+var root = flag.String("wwwroot", "wwwroot", "webserver document root folder")
 
-var redis_host = flag.String("rh", "localhost:6379", "redis host")
-var redis_pass = flag.String("rp", "", "redis password")
-var redis_db = flag.Int64("rdb", -1, "redis db index")
+var redis_host = flag.String("redis-host", "localhost:6379", "redis host")
+var redis_pass = flag.String("redis-pass", "", "redis password")
+var redis_db = flag.Int64("redis-db", -1, "redis db index")
 
 var verbose = flag.Bool("verbose", false, "log common operations and not just errors")
 
