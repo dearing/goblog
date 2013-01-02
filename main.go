@@ -1,5 +1,5 @@
 /*
-	Jacob Dearing
+	Copyright (c) 2012 Jacob Dearing
 */
 package main
 
@@ -24,18 +24,13 @@ type Article struct {
 var articles = flag.String("articles", "articles", "markdown posts")
 var templates = flag.String("templates", "templates", "templates posts")
 var suffix = flag.String("suffix", ".md", "filtered extension")
-
 var host = flag.String("wwwhost", ":8080", "host to bind to")
 var root = flag.String("wwwroot", "wwwroot", "webserver document root folder")
-
 var redis_host = flag.String("redis-host", "localhost:6379", "redis host")
 var redis_pass = flag.String("redis-pass", "", "redis password")
 var redis_db = flag.Int64("redis-db", -1, "redis db index")
-
 var verbose = flag.Bool("verbose", false, "log common operations and not just errors")
 
-// MISC
-//var templates = template.Must(template.ParseGlob("templates/*.html"))
 var client *redis.Client
 
 //  MAIN

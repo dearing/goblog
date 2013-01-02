@@ -1,5 +1,5 @@
 /*
-	Jacob Dearing
+	Copyright (c) 2012 Jacob Dearing
 */
 package main
 
