@@ -15,7 +15,7 @@ import (
 // Push a files contents up to the redis db after processing as markdown
 func push(src string) error {
 
-	key := fmt.Sprintf("%s/%s", *content, src)
+	key := fmt.Sprintf("%s/%s", config.ContentFolder, src)
 
 	body, err := ioutil.ReadFile(key)
 	if err != nil {
@@ -28,7 +28,7 @@ func push(src string) error {
 		return test.Err()
 	}
 
-	if *verbose {
+	if config.Verbose {
 		log.Printf("pushed %s", key)
 	}
 
@@ -39,7 +39,7 @@ func push(src string) error {
 // TODO: needs a better naming scheme that will unfold when I get around to organizing data on the db
 func pushall(folder string) error {
 
-	files, _ := ioutil.ReadDir(*content)
+	files, _ := ioutil.ReadDir(config.ContentFolder)
 
 	// for each file in the folder that, isn't a folder itself, push the parsed contents up
 	for _, file := range files {
@@ -60,7 +60,7 @@ func pull(title string) (*Article, error) {
 	key := fmt.Sprintf(title)
 
 	if !client.Exists(key).Val() {
-		if *verbose {
+		if config.Verbose {
 			log.Printf("not found: %v", key)
 			return nil, errors.New(fmt.Sprintf("db does not contain key: %v", key))
 		}
@@ -73,12 +73,12 @@ func pull(title string) (*Article, error) {
 func drop(title string) error {
 	test := client.Del(title)
 	if test.Err() != nil {
-		if *verbose {
+		if config.Verbose {
 			log.Printf("unable to del %s", title)
 			return test.Err()
 		}
 	}
-	if *verbose {
+	if config.Verbose {
 		log.Printf("removed %s", title)
 	}
 	return nil

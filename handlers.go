@@ -17,9 +17,9 @@ import (
 func tocHandler(w http.ResponseWriter, r *http.Request) {
 	title := "table of contents"
 
-	keys := client.Keys(*content + "/*")
+	keys := client.Keys(config.ContentFolder + "/*")
 
-	t, err := template.ParseGlob(*templates + "/*")
+	t, err := template.ParseGlob(config.TemplateFolder + "/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)
@@ -32,10 +32,10 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 
 	// for each key we add a list element
 	for _, element := range keys.Val() {
-		if element != *content+"/index.md" {
+		if element != config.ContentFolder+"/index.md" {
 
 			url := strings.Replace(element, ".md", "", 1)
-			url = strings.Replace(url, *content+"/", "", 1)
+			url = strings.Replace(url, config.ContentFolder+"/", "", 1)
 			t.ExecuteTemplate(w, "toc-item", url)
 		}
 	}
@@ -49,7 +49,7 @@ func contentHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	title := vars["title"]
 
-	key := fmt.Sprintf("%s/%s.md",*content,title)
+	key := fmt.Sprintf("%s/%s.md", config.ContentFolder, title)
 
 	p, err := pull(key)
 	if err != nil {
@@ -58,7 +58,7 @@ func contentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t, err := template.ParseGlob(*templates + "/*")
+	t, err := template.ParseGlob(config.TemplateFolder + "/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)
@@ -74,7 +74,7 @@ func contentHandler(w http.ResponseWriter, r *http.Request) {
 // Load and display an article from our redis db.
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
-	src := fmt.Sprintf("%s/index.md", *content)
+	src := fmt.Sprintf("%s/index.md", config.ContentFolder)
 
 	p, err := pull(src)
 	if err != nil {
@@ -83,7 +83,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//t, err := template.ParseFiles("templates/common.html", "templates/article.html")
-	t, err := template.ParseGlob(*templates + "/*")
+	t, err := template.ParseGlob(config.TemplateFolder + "/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)

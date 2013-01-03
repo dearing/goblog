@@ -3,8 +3,7 @@ package main
 import (
 	"github.com/howeyc/fsnotify"
 	"log"
-
-	)
+)
 
 // Spin up a goroutine that watches two channels:
 // watcher.Event for events of [Delete, Modify, Moved, New] and
@@ -16,19 +15,19 @@ func watch() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	for {
 		select {
 		case ev := <-watcher.Event:
-	
-			if *verbose {
+
+			if config.Verbose {
 				log.Printf("event:%v", ev)
 			}
-	
+
 			if ev.IsModify() || ev.IsCreate() {
 				push(ev.Name)
 			}
-	
+
 			if ev.IsDelete() {
 				drop(ev.Name)
 			}
@@ -47,13 +46,13 @@ func watch() {
 			log.Println("error:", err)
 		}
 	}
-	
+
 	log.Print("setting up watcher")
-	
-	err = watcher.Watch(*content)
+
+	err = watcher.Watch(config.ContentFolder)
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	defer watcher.Close()
 }
