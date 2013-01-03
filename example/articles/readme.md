@@ -4,40 +4,23 @@ blog
 
 blogging with go, markdown and redis
 
-whatisit?
+about
 -----
-Simply this little gem takes some templates and some articles written in markdown, parses tme and then pushes them to an active redis db where they are served for the web requests.  
-A simple filewatcher then pushes modified documents as they are created or modified.
+Wanting a simple blogging engine that kept things simple but performant I got to writing one for myself.  Markdown presented itself as a nice format to store posts in and better yet, write posts in on a desktop or phone.  I also wanted this blogging engine to keep metrics and update information on itself that can be presented to an authenticated reader (or no) internally.  Finally I wanted all this to be adminstrated from a OpenID authentication scheme so that other services can reliably handle credentials and what not.  From all this was this project born.
 
 
-why use redis?
------
-The idea was to play around some with an engine and redis to store blog stats, changesets and timestamps as a complete solution for play.
-
-
-user administration
+incoming android
 ----
-I'm working on implementing Openid for administration needs and whatnot after I consider how this whole suite fits together.
+In the future, I will jazz up a basic android app that can handle all the administration relevant to the blog remotely so that I can post on the go.  This is important to me because I am otherwise too lazy to share my whims, but with an app in hand this may change...
 
-
-and my file uploads?
-----
-I'm wresting with the idea of going with a RESTful service or using something cool and fancy like HTML5's file api or Websockets.  Practical concerns with proxy (read Nginx) and browser support with the technologies are the angles here.
-
-an android app too?
-----
-Yea, I know overkill right?  This is all for fun and my personal practical use and I feel having a simplistic app on my phone will allow me to post more often.
-
-extras
-----
-systemd units
-nginx sample proxy configs
-and android app
 
 try it out
 ---
 ```
 go get github.com/dearing/blog
+go install
+
+cd example
 blog --help
 
 Usage of blog:
@@ -50,4 +33,6 @@ Usage of blog:
   -verbose=false: log common operations and not just errors
   -wwwhost=":8080": host to bind to
   -wwwroot="wwwroot": webserver document root folder
+
+blog -verbose=true
 ```
