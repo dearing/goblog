@@ -4,6 +4,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/vmihailenco/redis"
@@ -19,16 +20,25 @@ type Article struct {
 	Body  template.HTML // we consider the storage to be safe enough to generate HTML from (after markdown processing)
 }
 
+var conf = flag.String("conf", "blog.conf", "JSON configuration")
+var generate = flag.Bool("generate", false, "generate a new config as conf is set")
 var config Config
 var client *redis.Client
 
 //  MAIN
 func main() {
 
-	config.LoadConfig("blog.conf")
+	flag.Parse()
+
+	if *generate {
+		config.GenerateConfig(*conf)
+		return
+	}
+
+	config.LoadConfig(*conf)
 
 	if config.Verbose {
-		log.Println("configuration loaded")
+		log.Println("configuration loaded from " + *conf)
 	}
 
 	// Initialize contact with the server using our arguments or defaults.

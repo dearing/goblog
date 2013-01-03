@@ -31,12 +31,9 @@ func (c *Config) LoadConfig(path string) {
 
 }
 
-func (c *Config) SaveConfig(path string) {
+func (c *Config) GenerateConfig(path string) {
 
-}
-
-/*
-	c := Conf{
+	c = &Config{
 		ContentFolder:  "content",
 		TemplateFolder: "templates",
 		Suffix:         ".md",
@@ -44,11 +41,11 @@ func (c *Config) SaveConfig(path string) {
 		WWWRoot:        "wwwroot",
 		RedisHost:      "localhost:6379",
 		RedisPass:      "",
-		RedisDB:        1,
+		RedisDB:        -1,
 		Verbose:        true,
 	}
 
-	Config, _ := json.MarshalIndent(c, "", "\t")
-	ioutil.WriteFile("blog.conf", b, 0644)
-	os.Stdout.Write(b)
-*/
+	b, _ := json.MarshalIndent(c, "", "\t")
+	ioutil.WriteFile(*conf, b, 0644)
+
+}
