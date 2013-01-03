@@ -10,26 +10,26 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
-	"strings"
 )
 
 // Push a files contents up to the redis db after processing as markdown
-func push(filename string) error {
-	if strings.HasSuffix(filename, *suffix) {
-		body, err := ioutil.ReadFile(filename)
-		if err != nil {
-			return err
-		}
+func push(src string) error {
 
-		test := client.Set(filename, string(blackfriday.MarkdownCommon(body)))
+	key := fmt.Sprintf("%s/%s", config.ContentFolder, src)
 
-		if test.Err() != nil {
-			return test.Err()
-		}
+	body, err := ioutil.ReadFile(key)
+	if err != nil {
+		return err
+	}
 
-		if *verbose {
-			log.Printf("pushed %s", filename)
-		}
+	test := client.Set(key, string(blackfriday.MarkdownCommon(body)))
+
+	if test.Err() != nil {
+		return test.Err()
+	}
+
+	if config.Verbose {
+		log.Printf("pushed %s", key)
 	}
 
 	return nil
@@ -39,12 +39,12 @@ func push(filename string) error {
 // TODO: needs a better naming scheme that will unfold when I get around to organizing data on the db
 func pushall(folder string) error {
 
-	files, _ := ioutil.ReadDir("articles")
+	files, _ := ioutil.ReadDir(config.ContentFolder)
 
 	// for each file in the folder that, isn't a folder itself, push the parsed contents up
 	for _, file := range files {
 		if !file.IsDir() {
-			err := push(fmt.Sprintf("%s/%s", *articles, file.Name()))
+			err := push(file.Name())
 			if err != nil {
 				log.Println(err)
 			}
@@ -60,7 +60,7 @@ func pull(title string) (*Article, error) {
 	key := fmt.Sprintf(title)
 
 	if !client.Exists(key).Val() {
-		if *verbose {
+		if config.Verbose {
 			log.Printf("not found: %v", key)
 			return nil, errors.New(fmt.Sprintf("db does not contain key: %v", key))
 		}
@@ -73,12 +73,12 @@ func pull(title string) (*Article, error) {
 func drop(title string) error {
 	test := client.Del(title)
 	if test.Err() != nil {
-		if *verbose {
+		if config.Verbose {
 			log.Printf("unable to del %s", title)
 			return test.Err()
 		}
 	}
-	if *verbose {
+	if config.Verbose {
 		log.Printf("removed %s", title)
 	}
 	return nil

@@ -4,6 +4,8 @@
 package main
 
 import (
+	"fmt"
+	"github.com/gorilla/mux"
 	"html/template"
 	"log"
 	"net/http"
@@ -15,9 +17,9 @@ import (
 func tocHandler(w http.ResponseWriter, r *http.Request) {
 	title := "table of contents"
 
-	keys := client.Keys(*articles + "/*")
+	keys := client.Keys(config.ContentFolder + "/*")
 
-	t, err := template.ParseGlob(*templates + "/*")
+	t, err := template.ParseGlob(config.TemplateFolder + "/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)
@@ -30,10 +32,10 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 
 	// for each key we add a list element
 	for _, element := range keys.Val() {
-		if element != *articles+"/index.md" {
+		if element != config.ContentFolder+"/index.md" {
 
 			url := strings.Replace(element, ".md", "", 1)
-			url = strings.Replace(url, *articles+"/", "", 1)
+			url = strings.Replace(url, config.ContentFolder+"/", "", 1)
 			t.ExecuteTemplate(w, "toc-item", url)
 		}
 	}
@@ -42,18 +44,21 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Load and display an article from our redis db.
-func articleHandler(w http.ResponseWriter, r *http.Request) {
-	// Extract a meaningful title from the path.
-	title := r.URL.Path[len("/p/"):]
+func contentHandler(w http.ResponseWriter, r *http.Request) {
 
-	p, err := pull("articles/" + title + ".md")
+	vars := mux.Vars(r)
+	title := vars["title"]
+
+	key := fmt.Sprintf("%s/%s.md", config.ContentFolder, title)
+
+	p, err := pull(key)
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)
 		return
 	}
 
-	t, err := template.ParseGlob(*templates + "/*")
+	t, err := template.ParseGlob(config.TemplateFolder + "/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)
@@ -69,15 +74,16 @@ func articleHandler(w http.ResponseWriter, r *http.Request) {
 // Load and display an article from our redis db.
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
-	p, err := pull(*articles + "/index.md")
+	src := fmt.Sprintf("%s/index.md", config.ContentFolder)
+
+	p, err := pull(src)
 	if err != nil {
-		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)
 		return
 	}
 
 	//t, err := template.ParseFiles("templates/common.html", "templates/article.html")
-	t, err := template.ParseGlob(*templates + "/*")
+	t, err := template.ParseGlob(config.TemplateFolder + "/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)
