@@ -1,4 +1,5 @@
 /*
+	Blogging with go, markdown and redis.
 	Copyright (c) 2012 Jacob Dearing
 */
 package main
@@ -50,8 +51,9 @@ func main() {
 		log.Panicf("%v", ping.Err())
 	}
 
-	// Watch our content for changes
-	go watch()
+	// routine closing too fast...
+	watch(config.ContentFolder)
+	defer watcher.Close()
 
 	// Push our working content to our redis db
 	log.Println("pushing everything...")

@@ -18,6 +18,7 @@ type Config struct {
 	Verbose        bool
 }
 
+// Load up a JSON config file.
 func (c *Config) LoadConfig(path string) {
 
 	f, err := ioutil.ReadFile(path)
@@ -31,6 +32,7 @@ func (c *Config) LoadConfig(path string) {
 
 }
 
+// Generate a default config in the current directory for the user to manipulate.
 func (c *Config) GenerateConfig(path string) {
 
 	c = &Config{
