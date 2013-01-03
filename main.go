@@ -6,7 +6,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/howeyc/fsnotify"
+	"github.com/gorilla/mux"
 	"github.com/vmihailenco/redis"
 	"html/template"
 	"log"
@@ -21,7 +21,7 @@ type Article struct {
 }
 
 // ARGS
-var articles = flag.String("articles", "articles", "markdown posts")
+var content = flag.String("content", "content", "markdown files")
 var templates = flag.String("templates", "templates", "templates posts")
 var suffix = flag.String("suffix", ".md", "filtered extension")
 var host = flag.String("wwwhost", ":8080", "host to bind to")
@@ -49,64 +49,28 @@ func main() {
 
 	defer client.Close()
 
-	// Straight from the author of github.com/howeyc/fsnotify:
-	// Initialize our watcher and check for any errors...
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-	// Spin up a goroutine that watches two channels:
-	// watcher.Event for events of [Delete, Modify, Moved, New] and
-	// watcher.Error for any errors behind the scenes.
-	go func() {
-		for {
-			select {
-			case ev := <-watcher.Event:
-				if *verbose {
-					log.Printf("event:%v", ev)
-				}
-				if ev.IsModify() || ev.IsCreate() {
-					push(ev.Name)
-				}
-				if ev.IsDelete() {
-					drop(ev.Name)
-				}
+	// Watch our content for changes
+	go watch()
 
-				// TODO: Need to work out how to know the old name and the new.
-				// If it isn't supported in fsnotify then I'll need to make
-				// a routine scan the present state and compare that to the
-				// database.
-				/*
-					if ev.IsRename() {
-						push(ev.Name)
-					}
-				*/
-
-			case err := <-watcher.Error:
-				log.Println("error:", err)
-			}
-		}
-	}()
-
-	// Watch our articles for changes
-	err = watcher.Watch(*articles)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer watcher.Close()
-
-	// Push our working articles to our redis db
-	pushall(*articles)
+	// Push our working content to our redis db
+	pushall(*content)
 
 	//	Setup our handlers and get cracking...
-	http.Handle("/static/", http.FileServer(http.Dir(*root)))
-	http.HandleFunc("/", indexHandler)
-	http.HandleFunc("/p/", articleHandler)
-	http.HandleFunc("/toc/", tocHandler)
+	r := mux.NewRouter()
+	r.HandleFunc("/", indexHandler)
+	r.HandleFunc("/toc/", tocHandler)
+	r.HandleFunc("/p/{title}", contentHandler)
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir(*root)))
+	http.Handle("/", r)
+
+	//http.Handle("/static/", http.FileServer(http.Dir(*root)))
+	//http.HandleFunc("/", indexHandler)
+	//http.HandleFunc("/p/", articleHandler)
+	//http.HandleFunc("/toc/", tocHandler)
 
 	fmt.Printf("listening on %s // root=%s\n", *host, *root)
 
-	if err = http.ListenAndServe(*host, nil); err != nil {
+	if err := http.ListenAndServe(*host, nil); err != nil {
 		log.Fatalf("%v", err)
 	}
 }

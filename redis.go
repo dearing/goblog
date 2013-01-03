@@ -10,26 +10,26 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
-	"strings"
 )
 
 // Push a files contents up to the redis db after processing as markdown
-func push(filename string) error {
-	if strings.HasSuffix(filename, *suffix) {
-		body, err := ioutil.ReadFile(filename)
-		if err != nil {
-			return err
-		}
+func push(src string) error {
 
-		test := client.Set(filename, string(blackfriday.MarkdownCommon(body)))
+	key := fmt.Sprintf("%s/%s", *content, src)
 
-		if test.Err() != nil {
-			return test.Err()
-		}
+	body, err := ioutil.ReadFile(key)
+	if err != nil {
+		return err
+	}
 
-		if *verbose {
-			log.Printf("pushed %s", filename)
-		}
+	test := client.Set(key, string(blackfriday.MarkdownCommon(body)))
+
+	if test.Err() != nil {
+		return test.Err()
+	}
+
+	if *verbose {
+		log.Printf("pushed %s", key)
 	}
 
 	return nil
@@ -39,12 +39,12 @@ func push(filename string) error {
 // TODO: needs a better naming scheme that will unfold when I get around to organizing data on the db
 func pushall(folder string) error {
 
-	files, _ := ioutil.ReadDir("articles")
+	files, _ := ioutil.ReadDir(*content)
 
 	// for each file in the folder that, isn't a folder itself, push the parsed contents up
 	for _, file := range files {
 		if !file.IsDir() {
-			err := push(fmt.Sprintf("%s/%s", *articles, file.Name()))
+			err := push(file.Name())
 			if err != nil {
 				log.Println(err)
 			}
