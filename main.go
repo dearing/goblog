@@ -101,8 +101,8 @@ func main() {
 	//	Setup our handlers and get cracking...
 	http.Handle("/static/", http.FileServer(http.Dir(*root)))
 	http.HandleFunc("/", indexHandler)
-	http.HandleFunc("/blog/", articleHandler)
-	http.HandleFunc("/blog/toc/", tocHandler)
+	http.HandleFunc("/p/", articleHandler)
+	http.HandleFunc("/toc/", tocHandler)
 
 	fmt.Printf("listening on %s // root=%s\n", *host, *root)
 

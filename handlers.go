@@ -44,7 +44,7 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 // Load and display an article from our redis db.
 func articleHandler(w http.ResponseWriter, r *http.Request) {
 	// Extract a meaningful title from the path.
-	title := r.URL.Path[len("/blog/"):]
+	title := r.URL.Path[len("/p/"):]
 
 	p, err := pull("articles/" + title + ".md")
 	if err != nil {
