@@ -7,8 +7,8 @@ After=redis.service
 User=myuser
 Group=mygroup
 Type=simple
-ExecStart=/home/%u/wwwroot/blog/blog -wwwhost=:9000 -verbose=true
-WorkingDirectory=/home/%u/wwwroot/blog
+ExecStart=/home/myuser/wwwroot/blog/blog -wwwhost=:9000 -verbose=true
+WorkingDirectory=/home/myuser/wwwroot/blog
 Restart=always
 
 [Install]
