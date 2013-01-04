@@ -24,7 +24,7 @@ Usage of blog:
 ```
 ```
 {
-  "ContentFolder": "content",
+  	"ContentFolder": "content",
 	"TemplateFolder": "templates",
 	"Suffix": ".md",
 	"WWWHost": ":9000",
