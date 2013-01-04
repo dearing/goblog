@@ -12,8 +12,8 @@ import (
 // Push a files contents up to the redis db after processing as markdown
 func push(src string) error {
 
-	key := fmt.Sprintf("%s/%s", config.ContentFolder, src)
-
+	//key := fmt.Sprintf("%s/%s", config.ContentFolder, src)
+	key := src
 	body, err := ioutil.ReadFile(key)
 	if err != nil {
 		return err
@@ -41,7 +41,7 @@ func pushall(folder string) error {
 	// for each file in the folder that, isn't a folder itself, push the parsed contents up
 	for _, file := range files {
 		if !file.IsDir() {
-			err := push(file.Name())
+			err := push(fmt.Sprintf("%s/%s",config.ContentFolder,file.Name()))
 			if err != nil {
 				log.Println(err)
 			}

@@ -28,10 +28,17 @@ func watch(path string) {
 					log.Printf("event:%v", ev)
 				}
 				if ev.IsModify() || ev.IsCreate() {
-					push(ev.Name)
+					err := push(ev.Name)
+					if err != nil {
+						log.Println(err)
+					}
 				}
 				if ev.IsDelete() {
-					drop(ev.Name)
+					err := drop(ev.Name)
+					if err != nil {
+						log.Println(err)
+					}
+
 				}
 
 				// TODO: Need to work out how to know the old name and the new.
