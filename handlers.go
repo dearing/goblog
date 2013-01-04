@@ -1,20 +1,16 @@
 package main
 
 import (
-	"fmt"
+	store "github.com/dearing/blog/storage/redis"
 	"github.com/gorilla/mux"
+	"github.com/russross/blackfriday"
 	"html/template"
 	"log"
 	"net/http"
 	"strings"
 )
 
-// Generate a simple list of article titles and links from redis.
-// TODO: better naming scheme as at PUSHALL
 func tocHandler(w http.ResponseWriter, r *http.Request) {
-	title := "table of contents"
-
-	keys := client.Keys(config.ContentFolder + "/*")
 
 	t, err := template.ParseGlob(config.TemplateFolder + "/*")
 	if err != nil {
@@ -23,32 +19,38 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t.ExecuteTemplate(w, "head", title)
+	t.ExecuteTemplate(w, "head", nil)
 	t.ExecuteTemplate(w, "bar", nil)
 	t.ExecuteTemplate(w, "toc-head", nil)
 
+	keys := store.Keys("post:*")
+
 	// for each key we add a list element
 	for _, element := range keys.Val() {
-		if element != config.ContentFolder+"/index.md" {
 
-			url := strings.Replace(element, ".md", "", 1)
-			url = strings.Replace(url, config.ContentFolder+"/", "", 1)
-			t.ExecuteTemplate(w, "toc-item", url)
+		key := strings.Replace(element, "post:", "", 1)
+
+		p, err := store.Get(key)
+		if err != nil {
+			log.Println(err)
 		}
+
+		log.Println(p)
+
+		t.ExecuteTemplate(w, "toc-item", p)
+
 	}
 
 	t.ExecuteTemplate(w, "toc-foot", nil)
 }
 
-// Load and display an article from our redis db.
+// display content from storage
 func contentHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
-	title := vars["title"]
+	id := vars["id"]
 
-	key := fmt.Sprintf("%s/%s.md", config.ContentFolder, title)
-
-	p, err := pull(key)
+	p, err := store.Get(id)
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Printf("error : %v\n", err)
@@ -64,16 +66,18 @@ func contentHandler(w http.ResponseWriter, r *http.Request) {
 
 	t.ExecuteTemplate(w, "head", p)
 	t.ExecuteTemplate(w, "bar", p)
-	t.ExecuteTemplate(w, "article", p)
+	t.ExecuteTemplate(w, "article", getHTML(p.Content))
 	t.ExecuteTemplate(w, "foot", p)
+}
+
+func getHTML(content string) template.HTML {
+	return template.HTML(blackfriday.MarkdownCommon([]byte(content)))
 }
 
 // Load and display an article from our redis db.
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
-	src := fmt.Sprintf("%s/index.md", config.ContentFolder)
-
-	p, err := pull(src)
+	p, err := store.Get("1")
 	if err != nil {
 		log.Printf("error : %v\n", err)
 		return
@@ -89,6 +93,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 	t.ExecuteTemplate(w, "head", p)
 	t.ExecuteTemplate(w, "bar", p)
-	t.ExecuteTemplate(w, "article", p)
+	t.ExecuteTemplate(w, "article", getHTML(p.Content))
 	t.ExecuteTemplate(w, "foot", p)
 }
