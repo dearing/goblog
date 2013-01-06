@@ -27,7 +27,7 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 	// for each key we add a list element
 	for _, element := range keys.Val() {
 
-		key := strings.Replace(element, "post:", "", 1)
+		key := strings.TrimLeft(element, "post:")
 
 		p, err := store.Get(key)
 		if err != nil {
