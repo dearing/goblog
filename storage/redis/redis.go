@@ -130,8 +130,10 @@ func getHTML(content string) template.HTML {
 }
 
 func LoadDirectory(path string, suffix string) (e error) {
+	if !strings.HasSuffix(path, "/") {
+		path = path + "/"
+	}
 	x, e := ioutil.ReadDir(path)
-
 	if e != nil {
 		return e
 	}
