@@ -34,7 +34,9 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 		}
 
-		t.ExecuteTemplate(w, "toc-item", p)
+		if key != "index.md" {
+			t.ExecuteTemplate(w, "toc-item", p)
+		}
 
 	}
 
