@@ -47,6 +47,9 @@ func Set(p Post) (e error) {
 	client.HSet(key, "modified", fmt.Sprint(p.Modified.Unix()))
 	client.HIncrBy(key, "accessed", 1)
 
+	z := redis.Z{Score: float64(p.Created.Unix()), Member: p.Title}
+	client.ZAdd("posts", z)
+
 	return e
 
 }
@@ -103,15 +106,16 @@ func Del(id string) (e error) {
 	return e
 }
 
+// TODO: RENAME this shit
 func Keys(pattern string) (keys *redis.StringSliceReq) {
-	return client.Keys(pattern)
+	return client.ZRangeByScore("posts", "0", "inf", 0, 0)
 }
 
 func getHTML(content string) template.HTML {
 	return template.HTML(blackfriday.MarkdownCommon([]byte(content)))
 }
 
-func LoadDirectory(path string) (e error) {
+func LoadDirectory(path string, suffix string) (e error) {
 	x, e := ioutil.ReadDir(path)
 
 	if e != nil {
@@ -124,14 +128,16 @@ func LoadDirectory(path string) (e error) {
 			b, e := ioutil.ReadFile(path + z.Name())
 			if e != nil {
 				log.Println(e)
+				continue
 			}
 
-			//id := client.Incr("global:nextPostID")
+			id := strings.TrimRight(z.Name(), suffix)
 			p := Post{
-				//ID:       fmt.Sprintf("%v", id.Val()),
-				ID:       z.Name(),
-				Title:    strings.TrimRight(z.Name(), ".md"),
-				Content:  getHTML(string(b)),
+				ID:      id,
+				Title:   id,
+				Content: getHTML(string(b)),
+
+				// TODO: figure out how the fuck to get the *created time* from FILE!
 				Created:  time.Now(),
 				Modified: z.ModTime(),
 				Accessed: "0",

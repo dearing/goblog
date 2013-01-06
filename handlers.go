@@ -6,7 +6,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"strings"
+	//"strings"
 )
 
 func tocHandler(w http.ResponseWriter, r *http.Request) {
@@ -24,17 +24,20 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 
 	keys := store.Keys("post:*")
 
+	log.Println(keys.Val())
+
 	// for each key we add a list element
 	for _, element := range keys.Val() {
 
-		key := strings.TrimLeft(element, "post:")
+		log.Println(element)
+		key := element
 
 		p, err := store.Get(key, false)
 		if err != nil {
 			log.Println(err)
 		}
 
-		if key != "index.md" {
+		if key != "index" {
 			t.ExecuteTemplate(w, "toc-item", p)
 		}
 
@@ -70,7 +73,7 @@ func contentHandler(w http.ResponseWriter, r *http.Request) {
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
-	p, err := store.Get("index.md", true)
+	p, err := store.Get("index", true)
 	if err != nil {
 		log.Println(err)
 		return

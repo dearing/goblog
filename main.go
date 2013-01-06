@@ -35,7 +35,7 @@ func main() {
 
 	// Initialize contact with the server using our arguments or defaults.
 	store.Connect(config.RedisHost, config.RedisPass, config.RedisDB)
-	store.LoadDirectory(config.ContentFolder)
+	store.LoadDirectory(config.ContentFolder, config.Suffix)
 
 	//	Setup our handlers and get cracking...
 	r := mux.NewRouter()
