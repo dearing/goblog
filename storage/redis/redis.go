@@ -76,12 +76,12 @@ func Get(id string, incr bool) (p Post, e error) {
 		con[v[i]] = v[i+1]
 	}
 
+	// Parse our UNIX timestamp (as string) into a int64 to be understood as a type of time
 	created, e := strconv.ParseInt(con["created"], 10, 64)
 	if e != nil {
 		return p, e
 	}
-
-	mod, e := strconv.ParseInt(con["created"], 10, 64)
+	mod, e := strconv.ParseInt(con["modified"], 10, 64)
 	if e != nil {
 		return p, e
 	}
@@ -106,11 +106,12 @@ func Del(id string) (e error) {
 	return e
 }
 
-// TODO: RENAME this shit
+// Return our post titles sorted in reverse of creation
 func GetPosts() (keys *redis.StringSliceReq) {
 	return client.ZRevRange("posts", "0", "-1")
 }
 
+// Return the latest post
 func GetLatest() (p Post, e error) {
 
 	a := client.ZRevRange("posts", "0", "0")
