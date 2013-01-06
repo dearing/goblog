@@ -2,11 +2,14 @@ blog
 ====
 **still in development**
 
-blogging with go, markdown and redis
+blogging with go, markdown, redis and Oauth2
 
 about
 -----
-simple blogging; markdown for design; redis for caching and metrics
+- markdown posts
+- redis for caching and metrics
+- github oauth2 for administration
+- more fun with go
 
 try it out
 ---
@@ -22,16 +25,24 @@ Usage of blog:
   -generate=false: generate a new config as conf is set
   
 ```
+
+example config
+----
 ```
 {
-  	"ContentFolder": "content",
+	"Verbose": true,
+	"EnableWWW": false,
+	"ContentFolder": "content",
 	"TemplateFolder": "templates",
 	"Suffix": ".md",
-	"WWWHost": ":9000",
-	"WWWRoot": "wwwroot",
-	"RedisHost": "127.0.0.1:6379",
+	"WWWHost": ":9002",
+	"WWWRoot": "example",
+	"RedisHost": "localhost:6379",
 	"RedisPass": "",
 	"RedisDB": -1,
-	"Verbose": true
+	"ClientID": "",
+	"ClientSecret": "",
+	"RedirectURL": "/callback",
+	"AdminLogin": ""
 }
 ```
