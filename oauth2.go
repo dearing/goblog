@@ -1,10 +1,3 @@
-/*	
-	-------------------------------------------------------------
-		OAUTH2 Bullshit
-		Experimenting with github OAUTH
-	-------------------------------------------------------------
-*/
-
 package main
 
 import (
@@ -17,7 +10,6 @@ import (
 	"time"
 
 	"code.google.com/p/goauth2/oauth"
-	//store "github.com/dearing/blog/storage/redis"
 	"github.com/gorilla/securecookie"
 )
 
@@ -34,6 +26,8 @@ func initOauth2() {
 		RedirectURL:  config.RedirectURL,
 	}
 
+	// CloudFlares nifty snippet for generating a random string
+	// We use this for STATE data on authentication requests.
 	go func() {
 		h := sha1.New()
 		for {
@@ -44,19 +38,28 @@ func initOauth2() {
 
 }
 
+// The blockKey is optional, used to encrypt the cookie value -- set it to nil to not use encryption. 
+// If set, the length must correspond to the block size of the encryption algorithm. 
+// For AES, used by default, valid lengths are 16, 24, or 32 bytes to select AES-128, AES-192, or AES-256.
+// SEE: http://www.gorillatoolkit.org/pkg/securecookie
 var hashKey = []byte(securecookie.GenerateRandomKey(32))
 var blockKey = []byte(securecookie.GenerateRandomKey(32))
 var s = securecookie.New(hashKey, blockKey)
 
+// Start the login process if the user doesn't have a AUTH valid cookie.
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	if !validateCookie(w, r) {
+
+		// Get a new random string for our state, store it in a secure cookie 
+		// on the client and start our authentication process.
 		state := <-NewState
 		setStateCookie(w, r, state)
 		url := oauth_config.AuthCodeURL(state)
-
-		log.Println(state)
 		http.Redirect(w, r, url, http.StatusFound)
+
 	} else {
+
+		// No need to reauthenticate if our present cookie is still good.
 		http.Redirect(w, r, "/", http.StatusAccepted)
 	}
 }
@@ -65,12 +68,12 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 func callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	code := r.FormValue("code")   // temp code for authentication
-	state := r.FormValue("state") // secret between us and authenticator
-
-	log.Println(code, state)
+	state := r.FormValue("state") // secret between us and Github
 
 	if state != getState(w, r) {
-		log.Println("state did not match")
+		if config.Verbose {
+			log.Println("Client's stored state did not match post data from Github. Failing login attempt.")
+		}
 		http.Redirect(w, r, "/", http.StatusUnauthorized)
 	}
 
@@ -85,7 +88,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Now we have a client with a valid access token.
 	// We use this access token to request the current authenticated user information.
-	// This will be the same an public read to the Github API v3 however, the /user URL
+	// This will be the same as a public read to the Github API v3 however, the /user URL
 	// alone only returns the authenticated user according to the token.  So this should
 	// suffice as proof that the user IS a valid Github User.
 
@@ -104,7 +107,9 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusInternalServerError)
 	}
 
-	// Now here we look at the login string in the JSON the server sent us for our ADMIN check.
+	// Now here we look at the login field in the JSON the server sent us for our ADMIN check.
+	// TODO:  I'm not comfortable bypassing strict TYPE checking by using the wildcard interface{}
+	//        which matches anything.  Create a strict type with values we care about and move on.
 	login := info["login"]
 	if login != config.AdminLogin {
 
@@ -115,7 +120,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	} else {
 
-		// We need drop a cookie now to retain login status
+		// Set a cookie now to retain AUTH status after cleaning up our state cookie and perhaps any invalid Auth cookies.
 		log.Println("Admin logged in.")
 		removeCookies(w, r)
 		setAuthCookie(w, r, login)
@@ -124,7 +129,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// Delete login cookie
+// Delete login cookie; send them home.
 func logoutHander(w http.ResponseWriter, r *http.Request) {
 	removeCookies(w, r)
 	http.Redirect(w, r, "/", http.StatusFound)
@@ -140,7 +145,7 @@ func secretPageHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // 5 minutes to keep state cookie for cross-site forgery attempts
-// I could be storing this internally but this *is* a secure cookie right?
+// I could be storing this at the server but this *is* a secure cookie right?
 func setStateCookie(w http.ResponseWriter, r *http.Request, state string) {
 	if encoded, err := s.Encode("state", state); err == nil {
 		cookie := &http.Cookie{
@@ -153,7 +158,8 @@ func setStateCookie(w http.ResponseWriter, r *http.Request, state string) {
 	}
 }
 
-// Set a secure cookie
+// Set our AUTH secure cookie.
+// TODO: clean it up - at present we are simply dumping all user data into the cookie.
 func setAuthCookie(w http.ResponseWriter, r *http.Request, login interface{}) {
 
 	value := map[string]interface{}{
@@ -173,7 +179,7 @@ func setAuthCookie(w http.ResponseWriter, r *http.Request, login interface{}) {
 	}
 }
 
-// Remove a secure cookie
+// Remove all cookies we have set on this client.
 func removeCookies(w http.ResponseWriter, r *http.Request) {
 	for _, v := range r.Cookies() {
 
@@ -184,7 +190,10 @@ func removeCookies(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Returns true if the cookie the client provided checks out.
+// Just returns the state stored in cookie, or "" if nodda.
+// BUG (jacob): What if github returns state:"" and we have nothing stored? 
+//              Then one equals the other but code:?? is still needed to move on.
+//			    Still, seems a bit sloppy for my taste.
 func getState(w http.ResponseWriter, r *http.Request) (state string) {
 
 	cookie, err := r.Cookie("state")
@@ -199,17 +208,26 @@ func getState(w http.ResponseWriter, r *http.Request) (state string) {
 	return state
 }
 
-// Returns true if the cookie the client provided checks out.
+// Returns true if the cookie the client provided checks out with configured ADMIN
+// Cleanup invalid cookies if anything doesn't check out.
 func validateCookie(w http.ResponseWriter, r *http.Request) bool {
-	if cookie, err := r.Cookie("auth"); err == nil {
-		value := make(map[string]interface{})
-		if err = s.Decode("auth", cookie.Value, &value); err == nil {
-			if value["login"] == config.AdminLogin {
-				return true
-			}
-		} else {
-			log.Println(err)
-		}
+	cookie, err := r.Cookie("auth")
+	if err != nil {
+		log.Println(err)
+		return false
 	}
+
+	value := make(map[string]interface{})
+	err = s.Decode("auth", cookie.Value, &value)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
+	if value["login"] == config.AdminLogin {
+		return true
+	}
+
+	removeCookies(w, r)
 	return false
 }
