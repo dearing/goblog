@@ -1,0 +1,14 @@
+[Unit]
+Description=my blog
+After=syslog.target network.target redis.service
+
+[Service]
+User=myuser
+Group=mygroup
+Type=simple
+ExecStart=/home/myuser/wwwroot/blog/blog
+WorkingDirectory=/home/myuser/wwwroot/blog
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

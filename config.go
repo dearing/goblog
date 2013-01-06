@@ -16,6 +16,7 @@ type Config struct {
 	RedisPass      string
 	RedisDB        int64
 	Verbose        bool
+	EnableWWW      bool
 }
 
 // Load up a JSON config file.
@@ -39,12 +40,13 @@ func (c *Config) GenerateConfig(path string) {
 		ContentFolder:  "content",
 		TemplateFolder: "templates",
 		Suffix:         ".md",
-		WWWHost:        ":8080",
-		WWWRoot:        "wwwroot",
+		WWWHost:        ":9002",
+		WWWRoot:        "example",
 		RedisHost:      "localhost:6379",
 		RedisPass:      "",
 		RedisDB:        -1,
 		Verbose:        true,
+		EnableWWW:      false,
 	}
 
 	b, _ := json.MarshalIndent(c, "", "\t")

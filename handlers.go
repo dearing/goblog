@@ -1,64 +1,62 @@
 package main
 
 import (
-	"fmt"
+	store "github.com/dearing/blog/storage/redis"
 	"github.com/gorilla/mux"
 	"html/template"
 	"log"
 	"net/http"
-	"strings"
 )
 
-// Generate a simple list of article titles and links from redis.
-// TODO: better naming scheme as at PUSHALL
 func tocHandler(w http.ResponseWriter, r *http.Request) {
-	title := "table of contents"
-
-	keys := client.Keys(config.ContentFolder + "/*")
 
 	t, err := template.ParseGlob(config.TemplateFolder + "/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
-		log.Printf("error : %v\n", err)
+		log.Println(err)
 		return
 	}
 
-	t.ExecuteTemplate(w, "head", title)
+	t.ExecuteTemplate(w, "head", nil)
 	t.ExecuteTemplate(w, "bar", nil)
 	t.ExecuteTemplate(w, "toc-head", nil)
 
-	// for each key we add a list element
-	for _, element := range keys.Val() {
-		if element != config.ContentFolder+"/index.md" {
+	keys := store.GetPosts()
 
-			url := strings.Replace(element, ".md", "", 1)
-			url = strings.Replace(url, config.ContentFolder+"/", "", 1)
-			t.ExecuteTemplate(w, "toc-item", url)
+	// for each key we add a list element
+	for _, key := range keys.Val() {
+
+		p, err := store.Get(key, false)
+		if err != nil {
+			log.Println(err)
+			continue
 		}
+
+		if key != "index" {
+			t.ExecuteTemplate(w, "toc-item", p)
+		}
+
 	}
 
 	t.ExecuteTemplate(w, "toc-foot", nil)
 }
 
-// Load and display an article from our redis db.
 func contentHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
-	title := vars["title"]
+	id := vars["id"]
 
-	key := fmt.Sprintf("%s/%s.md", config.ContentFolder, title)
-
-	p, err := pull(key)
+	p, err := store.Get(id, true)
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
-		log.Printf("error : %v\n", err)
+		log.Println(err)
 		return
 	}
 
 	t, err := template.ParseGlob(config.TemplateFolder + "/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
-		log.Printf("error : %v\n", err)
+		log.Println(err)
 		return
 	}
 
@@ -68,22 +66,19 @@ func contentHandler(w http.ResponseWriter, r *http.Request) {
 	t.ExecuteTemplate(w, "foot", p)
 }
 
-// Load and display an article from our redis db.
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
-	src := fmt.Sprintf("%s/index.md", config.ContentFolder)
-
-	p, err := pull(src)
+	//p, err := store.Get("index", true)
+	p, err := store.GetLatest()
 	if err != nil {
-		log.Printf("error : %v\n", err)
+		log.Println(err)
 		return
 	}
 
-	//t, err := template.ParseFiles("templates/common.html", "templates/article.html")
 	t, err := template.ParseGlob(config.TemplateFolder + "/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
-		log.Printf("error : %v\n", err)
+		log.Println(err)
 		return
 	}
 
