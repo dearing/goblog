@@ -52,6 +52,11 @@ article {
   max-width: 800px;
   line-height: 150%;
 }
+.mod {
+  font-size: .7em;
+  color: gray;
+  text-align: right;
+}
 .bar {
   position: fixed;
   width: 20%;

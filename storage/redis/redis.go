@@ -8,15 +8,17 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type Post struct {
 	ID       string
 	Title    string
 	Content  template.HTML
-	Created  string
-	Modified string
+	Created  time.Time
+	Modified time.Time
 	Accessed string
 }
 
@@ -41,15 +43,15 @@ func Set(p Post) (e error) {
 
 	client.HSet(key, "title", p.Title)
 	client.HSet(key, "content", string(p.Content))
-	client.HSet(key, "created", string(p.Created))
-	client.HSet(key, "modified", string(p.Modified))
+	client.HSet(key, "created", fmt.Sprint(p.Created.Unix()))
+	client.HSet(key, "modified", fmt.Sprint(p.Modified.Unix()))
 	client.HIncrBy(key, "accessed", 1)
 
 	return e
 
 }
 
-func Get(id string) (p Post, e error) {
+func Get(id string, incr bool) (p Post, e error) {
 
 	key := fmt.Sprintf("post:%s", id)
 
@@ -71,12 +73,26 @@ func Get(id string) (p Post, e error) {
 		con[v[i]] = v[i+1]
 	}
 
+	created, e := strconv.ParseInt(con["created"], 10, 64)
+	if e != nil {
+		return p, e
+	}
+
+	mod, e := strconv.ParseInt(con["created"], 10, 64)
+	if e != nil {
+		return p, e
+	}
+
 	p.ID = id
 	p.Title = con["title"]
 	p.Content = template.HTML(con["content"])
-	p.Created = con["created"]
-	p.Modified = con["modified"]
+	p.Created = time.Unix(created, 0)
+	p.Modified = time.Unix(mod, 0)
 	p.Accessed = con["accessed"]
+
+	if incr {
+		client.HIncrBy(key, "accessed", 1)
+	}
 
 	return p, e
 }
@@ -116,8 +132,8 @@ func LoadDirectory(path string) (e error) {
 				ID:       z.Name(),
 				Title:    strings.TrimRight(z.Name(), ".md"),
 				Content:  getHTML(string(b)),
-				Created:  fmt.Sprintf("%v", z.ModTime().Unix()),
-				Modified: fmt.Sprintf("%v", z.ModTime().Unix()),
+				Created:  time.Now(),
+				Modified: z.ModTime(),
 				Accessed: "0",
 			}
 			Set(p)

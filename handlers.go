@@ -29,7 +29,7 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 
 		key := strings.TrimLeft(element, "post:")
 
-		p, err := store.Get(key)
+		p, err := store.Get(key, false)
 		if err != nil {
 			log.Println(err)
 		}
@@ -48,7 +48,7 @@ func contentHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	p, err := store.Get(id)
+	p, err := store.Get(id, true)
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Println(err)
@@ -70,7 +70,7 @@ func contentHandler(w http.ResponseWriter, r *http.Request) {
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
-	p, err := store.Get("index.md")
+	p, err := store.Get("index.md", true)
 	if err != nil {
 		log.Println(err)
 		return

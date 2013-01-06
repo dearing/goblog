@@ -1,5 +1,3 @@
-blog
-====
 **still in development**
 
 blogging with go, markdown and redis
