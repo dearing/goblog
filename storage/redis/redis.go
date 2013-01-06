@@ -108,13 +108,12 @@ func Del(id string) (e error) {
 
 // TODO: RENAME this shit
 func GetPosts() (keys *redis.StringSliceReq) {
-	return client.ZRangeByScore("posts", "0", "inf", 0, 0)
+	return client.ZRevRange("posts", "0", "-1")
 }
 
 func GetLatest() (p Post, e error) {
 
 	a := client.ZRevRange("posts", "0", "0")
-	//a := client.ZRangeByScore("posts", "0", "inf", 0, 1)
 	if a.Err() != nil {
 		log.Println(a.Err())
 		return p, a.Err()
