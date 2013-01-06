@@ -34,6 +34,7 @@ func main() {
 	}
 
 	// Initialize contact with the server using our arguments or defaults.
+	// TODO: failure checks error handling etc...
 	store.Connect(config.RedisHost, config.RedisPass, config.RedisDB)
 	store.LoadDirectory(config.ContentFolder, config.Suffix)
 

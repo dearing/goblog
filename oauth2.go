@@ -13,9 +13,11 @@ import (
 	"github.com/gorilla/securecookie"
 )
 
-var oauth_config oauth.Config
-var NewState = make(chan string)
+var oauth_config oauth.Config    // OAuth2 configuration
+var NewState = make(chan string) // Channel to get new random strings from a goroutine started below
 
+// Designed to be started after we have read our main packages configuration for the important values.
+// also, start our go routine
 func initOauth2() {
 	oauth_config = oauth.Config{
 		ClientId:     config.ClientID,
@@ -26,8 +28,11 @@ func initOauth2() {
 		RedirectURL:  config.RedirectURL,
 	}
 
-	// CloudFlares nifty snippet for generating a random string
+	// CloudFlare's nifty snippet for generating a random string
 	// We use this for STATE data on authentication requests.
+	// NOTE: Okay, this would be one avenue of attack since it is guessable but seriously, wow.
+	//       One would do better to poison the server DNS or something equally difficult to circumvent this security.
+	// TODO: salt it just to have some fun.
 	go func() {
 		h := sha1.New()
 		for {
@@ -42,6 +47,7 @@ func initOauth2() {
 // If set, the length must correspond to the block size of the encryption algorithm. 
 // For AES, used by default, valid lengths are 16, 24, or 32 bytes to select AES-128, AES-192, or AES-256.
 // SEE: http://www.gorillatoolkit.org/pkg/securecookie
+
 var hashKey = []byte(securecookie.GenerateRandomKey(32))
 var blockKey = []byte(securecookie.GenerateRandomKey(32))
 var s = securecookie.New(hashKey, blockKey)
@@ -50,7 +56,7 @@ var s = securecookie.New(hashKey, blockKey)
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	if !validateCookie(w, r) {
 
-		// Get a new random string for our state, store it in a secure cookie 
+		// Get a new random string for our STATE, store it in a secure cookie 
 		// on the client and start our authentication process.
 		state := <-NewState
 		setStateCookie(w, r, state)
@@ -64,10 +70,10 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// This callback contains a temp code and our passed secret from Github
+// This callback contains a temp CODE and our passed STATE from Github
 func callbackHandler(w http.ResponseWriter, r *http.Request) {
 
-	code := r.FormValue("code")   // temp code for authentication
+	code := r.FormValue("code")   // temp CODE for authentication
 	state := r.FormValue("state") // secret between us and Github
 
 	if state != getState(w, r) {
@@ -77,7 +83,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusUnauthorized)
 	}
 
-	// We attempt to exchange the temp code we got for a real access token...
+	// We attempt to exchange the temp CODE we got for a real access token...
 	t := &oauth.Transport{Config: &oauth_config}
 	_, e := t.Exchange(code)
 	if e != nil {
@@ -90,7 +96,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	// We use this access token to request the current authenticated user information.
 	// This will be the same as a public read to the Github API v3 however, the /user URL
 	// alone only returns the authenticated user according to the token.  So this should
-	// suffice as proof that the user IS a valid Github User.
+	// suffice as proof that the user IS a valid Github USER.
 
 	resp, _ := c.Get("https://api.github.com/user")
 	defer resp.Body.Close()
@@ -100,7 +106,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusInternalServerError)
 	}
 
-	// We have a valid Github User but is it our admin?
+	// We have a valid Github USER but is it our ADMIN?
 	var info map[string]interface{}
 	if err := json.Unmarshal(contents, &info); err != nil {
 		log.Println(err)
@@ -113,14 +119,14 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	login := info["login"]
 	if login != config.AdminLogin {
 
-		// USER ain't our admin, move along.
-		log.Println("Github user did not match admin.")
+		// USER ain't our ADMIN, move along.
+		log.Println("Github user did not match admin configuration.")
 		removeCookies(w, r)
 		http.Redirect(w, r, "/", http.StatusUnauthorized)
 
 	} else {
 
-		// Set a cookie now to retain AUTH status after cleaning up our state cookie and perhaps any invalid Auth cookies.
+		// Set a cookie now to retain AUTH status after cleaning up our state cookie and perhaps any previous invalid cookies.
 		log.Println("Admin logged in.")
 		removeCookies(w, r)
 		setAuthCookie(w, r, login)
@@ -129,13 +135,13 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// Delete login cookie; send them home.
+// Delete cookies; send client home
 func logoutHander(w http.ResponseWriter, r *http.Request) {
 	removeCookies(w, r)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-// Testing secret page
+// SECRET page for testing only; no need to redirect to login
 func secretPageHandler(w http.ResponseWriter, r *http.Request) {
 	if validateCookie(w, r) {
 		http.Redirect(w, r, "/", http.StatusAccepted)
@@ -152,13 +158,13 @@ func setStateCookie(w http.ResponseWriter, r *http.Request, state string) {
 			Name:    "state",
 			Value:   encoded,
 			Path:    "/",
-			Expires: time.Now().Add(5 * time.Minute),
+			Expires: time.Now().Add(5 * time.Minute), // t+5m
 		}
 		http.SetCookie(w, cookie)
 	}
 }
 
-// Set our AUTH secure cookie.
+// Set our AUTH secure cookie for 1 hour
 // TODO: clean it up - at present we are simply dumping all user data into the cookie.
 func setAuthCookie(w http.ResponseWriter, r *http.Request, login interface{}) {
 
@@ -172,9 +178,8 @@ func setAuthCookie(w http.ResponseWriter, r *http.Request, login interface{}) {
 			Name:    "auth",
 			Value:   encoded,
 			Path:    "/",
-			Expires: time.Now().Add(time.Hour),
+			Expires: time.Now().Add(time.Hour), // t+60m
 		}
-		cookie.Expires = time.Now().Add(time.Hour)
 		http.SetCookie(w, cookie)
 	}
 }
@@ -190,10 +195,10 @@ func removeCookies(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Just returns the state stored in cookie, or "" if nodda.
+// Just returns the state stored in cookie, or "" if nadda.
 // BUG (jacob): What if github returns state:"" and we have nothing stored? 
 //              Then one equals the other but code:?? is still needed to move on.
-//			    Still, seems a bit sloppy for my taste.
+//			    Still, seems a bit sloppy for my taste...
 func getState(w http.ResponseWriter, r *http.Request) (state string) {
 
 	cookie, err := r.Cookie("state")
@@ -210,10 +215,12 @@ func getState(w http.ResponseWriter, r *http.Request) (state string) {
 
 // Returns true if the cookie the client provided checks out with configured ADMIN
 // Cleanup invalid cookies if anything doesn't check out.
+// TODO: clean this shit up
 func validateCookie(w http.ResponseWriter, r *http.Request) bool {
 	cookie, err := r.Cookie("auth")
 	if err != nil {
 		log.Println(err)
+		removeCookies(w, r)
 		return false
 	}
 
@@ -221,13 +228,13 @@ func validateCookie(w http.ResponseWriter, r *http.Request) bool {
 	err = s.Decode("auth", cookie.Value, &value)
 	if err != nil {
 		log.Println(err)
+		removeCookies(w, r)
 		return false
 	}
 
 	if value["login"] == config.AdminLogin {
 		return true
 	}
-
 	removeCookies(w, r)
 	return false
 }

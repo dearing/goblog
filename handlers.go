@@ -25,6 +25,7 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 	keys := store.GetPosts()
 
 	// for each key we add a list element
+	// TODO: I am certain there are template directives for this kinda shit : {{range .MyTitles}} for example
 	for _, key := range keys.Val() {
 
 		p, err := store.Get(key, false)
@@ -69,7 +70,6 @@ func contentHandler(w http.ResponseWriter, r *http.Request) {
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
-	//p, err := store.Get("index", true)
 	p, err := store.GetLatest()
 	if err != nil {
 		log.Println(err)
