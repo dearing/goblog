@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	//"strings"
 )
 
 func tocHandler(w http.ResponseWriter, r *http.Request) {
@@ -22,19 +21,15 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 	t.ExecuteTemplate(w, "bar", nil)
 	t.ExecuteTemplate(w, "toc-head", nil)
 
-	keys := store.Keys("post:*")
-
-	log.Println(keys.Val())
+	keys := store.GetPosts()
 
 	// for each key we add a list element
-	for _, element := range keys.Val() {
-
-		log.Println(element)
-		key := element
+	for _, key := range keys.Val() {
 
 		p, err := store.Get(key, false)
 		if err != nil {
 			log.Println(err)
+			continue
 		}
 
 		if key != "index" {
@@ -73,7 +68,8 @@ func contentHandler(w http.ResponseWriter, r *http.Request) {
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
-	p, err := store.Get("index", true)
+	//p, err := store.Get("index", true)
+	p, err := store.GetLatest()
 	if err != nil {
 		log.Println(err)
 		return

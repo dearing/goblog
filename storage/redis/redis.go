@@ -107,8 +107,22 @@ func Del(id string) (e error) {
 }
 
 // TODO: RENAME this shit
-func Keys(pattern string) (keys *redis.StringSliceReq) {
+func GetPosts() (keys *redis.StringSliceReq) {
 	return client.ZRangeByScore("posts", "0", "inf", 0, 0)
+}
+
+func GetLatest() (p Post, e error) {
+
+	a := client.ZRevRange("posts", "0", "0")
+	//a := client.ZRangeByScore("posts", "0", "inf", 0, 1)
+	if a.Err() != nil {
+		log.Println(a.Err())
+		return p, a.Err()
+	}
+
+	p, e = Get(a.Val()[0], false)
+
+	return p, e
 }
 
 func getHTML(content string) template.HTML {
@@ -138,6 +152,8 @@ func LoadDirectory(path string, suffix string) (e error) {
 				Content: getHTML(string(b)),
 
 				// TODO: figure out how the fuck to get the *created time* from FILE!
+				// NOTE: seems to be an OS thang >> http://golang.org/pkg/os/#FileInfo 
+				// -- Sys() interface{}   // underlying data source (can return nil) --
 				Created:  time.Now(),
 				Modified: z.ModTime(),
 				Accessed: "0",
