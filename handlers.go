@@ -3,7 +3,6 @@ package main
 import (
 	store "github.com/dearing/blog/storage/redis"
 	"github.com/gorilla/mux"
-	"github.com/russross/blackfriday"
 	"html/template"
 	"log"
 	"net/http"
@@ -15,7 +14,7 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseGlob(config.TemplateFolder + "/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
-		log.Printf("error : %v\n", err)
+		log.Println(err)
 		return
 	}
 
@@ -35,8 +34,6 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 			log.Println(err)
 		}
 
-		log.Println(p)
-
 		t.ExecuteTemplate(w, "toc-item", p)
 
 	}
@@ -44,7 +41,6 @@ func tocHandler(w http.ResponseWriter, r *http.Request) {
 	t.ExecuteTemplate(w, "toc-foot", nil)
 }
 
-// display content from storage
 func contentHandler(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
@@ -53,46 +49,40 @@ func contentHandler(w http.ResponseWriter, r *http.Request) {
 	p, err := store.Get(id)
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
-		log.Printf("error : %v\n", err)
+		log.Println(err)
 		return
 	}
 
 	t, err := template.ParseGlob(config.TemplateFolder + "/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
-		log.Printf("error : %v\n", err)
+		log.Println(err)
 		return
 	}
 
 	t.ExecuteTemplate(w, "head", p)
 	t.ExecuteTemplate(w, "bar", p)
-	t.ExecuteTemplate(w, "article", getHTML(p.Content))
+	t.ExecuteTemplate(w, "article", p)
 	t.ExecuteTemplate(w, "foot", p)
 }
 
-func getHTML(content string) template.HTML {
-	return template.HTML(blackfriday.MarkdownCommon([]byte(content)))
-}
-
-// Load and display an article from our redis db.
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 
-	p, err := store.Get("1")
+	p, err := store.Get("index.md")
 	if err != nil {
-		log.Printf("error : %v\n", err)
+		log.Println(err)
 		return
 	}
 
-	//t, err := template.ParseFiles("templates/common.html", "templates/article.html")
 	t, err := template.ParseGlob(config.TemplateFolder + "/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
-		log.Printf("error : %v\n", err)
+		log.Println(err)
 		return
 	}
 
 	t.ExecuteTemplate(w, "head", p)
 	t.ExecuteTemplate(w, "bar", p)
-	t.ExecuteTemplate(w, "article", getHTML(p.Content))
+	t.ExecuteTemplate(w, "article", p)
 	t.ExecuteTemplate(w, "foot", p)
 }

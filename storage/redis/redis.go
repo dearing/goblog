@@ -3,15 +3,18 @@ package redis
 import (
 	"errors"
 	"fmt"
+	"github.com/russross/blackfriday"
 	"github.com/vmihailenco/redis"
+	"html/template"
 	"io/ioutil"
+	"log"
+	"strings"
 )
 
 type Post struct {
 	ID       string
-	Title    string // just the title
-	Content  string // we consider the storage to be safe enough to generate HTML from (after markdown processing)
-	Author   string
+	Title    string
+	Content  template.HTML
 	Created  string
 	Modified string
 	Accessed string
@@ -38,7 +41,6 @@ func Set(p Post) (e error) {
 
 	client.HSet(key, "title", p.Title)
 	client.HSet(key, "content", string(p.Content))
-	client.HSet(key, "author", p.Author)
 	client.HSet(key, "created", string(p.Created))
 	client.HSet(key, "modified", string(p.Modified))
 	client.HIncrBy(key, "accessed", 1)
@@ -63,16 +65,18 @@ func Get(id string) (p Post, e error) {
 
 	v := get.Val()
 
-	// Build our post now
 	// Would think that there could be a mapping here in the github.com/vmihailenco/redis library?
-	// BUG(dearing): HASHES are unsorted so this should fail at some point down the road.
+	con := map[string]string{}
+	for i := 0; i < len(v); i += 2 {
+		con[v[i]] = v[i+1]
+	}
+
 	p.ID = id
-	p.Title = v[1]
-	p.Content = v[3]
-	p.Author = v[5]
-	p.Created = v[7]
-	p.Modified = v[9]
-	p.Accessed = v[11]
+	p.Title = con["title"]
+	p.Content = template.HTML(con["content"])
+	p.Created = con["created"]
+	p.Modified = con["modified"]
+	p.Accessed = con["accessed"]
 
 	return p, e
 }
@@ -87,8 +91,11 @@ func Keys(pattern string) (keys *redis.StringSliceReq) {
 	return client.Keys(pattern)
 }
 
-func LoadDirectory(path string) (e error) {
+func getHTML(content string) template.HTML {
+	return template.HTML(blackfriday.MarkdownCommon([]byte(content)))
+}
 
+func LoadDirectory(path string) (e error) {
 	x, e := ioutil.ReadDir(path)
 
 	if e != nil {
@@ -98,13 +105,17 @@ func LoadDirectory(path string) (e error) {
 	for _, z := range x {
 		if !z.IsDir() {
 
-			b, _ := ioutil.ReadFile(z.Name())
+			b, e := ioutil.ReadFile(path + z.Name())
+			if e != nil {
+				log.Println(e)
+			}
 
-			id := client.Incr("global:nextPostID")
+			//id := client.Incr("global:nextPostID")
 			p := Post{
-				ID:       fmt.Sprintf("%v", id.Val()),
-				Title:    z.Name(),
-				Content:  string(b),
+				//ID:       fmt.Sprintf("%v", id.Val()),
+				ID:       z.Name(),
+				Title:    strings.TrimRight(z.Name(), ".md"),
+				Content:  getHTML(string(b)),
 				Created:  fmt.Sprintf("%v", z.ModTime().Unix()),
 				Modified: fmt.Sprintf("%v", z.ModTime().Unix()),
 				Accessed: "0",
