@@ -40,8 +40,13 @@ func main() {
 	//	Setup our handlers and get cracking...
 	r := mux.NewRouter()
 	r.HandleFunc("/", indexHandler)
-	r.HandleFunc("/toc/", tocHandler)
+	r.HandleFunc("/toc", tocHandler)
 	r.HandleFunc("/p/{id}", contentHandler)
+
+	r.HandleFunc("/login", loginHandler)
+	r.HandleFunc("/logout", logoutHander)
+	r.HandleFunc("/callback", callbackHandler)
+	r.HandleFunc("/secret", secretPageHandler)
 
 	if config.EnableWWW {
 		r.PathPrefix("/").Handler(http.FileServer(http.Dir(config.WWWRoot)))

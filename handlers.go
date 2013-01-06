@@ -1,11 +1,12 @@
 package main
 
 import (
-	store "github.com/dearing/blog/storage/redis"
-	"github.com/gorilla/mux"
 	"html/template"
 	"log"
 	"net/http"
+
+	store "github.com/dearing/blog/storage/redis"
+	"github.com/gorilla/mux"
 )
 
 func tocHandler(w http.ResponseWriter, r *http.Request) {

@@ -7,16 +7,26 @@ import (
 )
 
 type Config struct {
+	Verbose   bool
+	EnableWWW bool
+
 	ContentFolder  string
 	TemplateFolder string
 	Suffix         string
-	WWWHost        string
-	WWWRoot        string
-	RedisHost      string
-	RedisPass      string
-	RedisDB        int64
-	Verbose        bool
-	EnableWWW      bool
+
+	WWWHost string
+	WWWRoot string
+
+	// Redis related
+	RedisHost string
+	RedisPass string
+	RedisDB   int64
+
+	// OAuth2
+	ClientID     string // app client id
+	ClientSecret string // supah secret app, secret
+	RedirectURL  string // After the user authenticates where should we catch the response code.
+	AdminLogin   string // There can only be one.
 }
 
 // Load up a JSON config file.
@@ -31,6 +41,7 @@ func (c *Config) LoadConfig(path string) {
 		log.Panicln(err)
 	}
 
+	initOauth2()
 }
 
 // Generate a default config in the current directory for the user to manipulate.
@@ -47,6 +58,12 @@ func (c *Config) GenerateConfig(path string) {
 		RedisDB:        -1,
 		Verbose:        true,
 		EnableWWW:      false,
+
+		// OAuth2
+		ClientID:     "",
+		ClientSecret: "",
+		RedirectURL:  "/callback",
+		AdminLogin:   "",
 	}
 
 	b, _ := json.MarshalIndent(c, "", "\t")
