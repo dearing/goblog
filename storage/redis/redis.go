@@ -88,7 +88,7 @@ func Get(id string, incr bool) (p Post, e error) {
 
 	p.ID = id
 	p.Title = con["title"]
-	p.Content = template.HTML(con["content"])
+	p.Content = getHTML(con["content"])
 	p.Created = time.Unix(created, 0)
 	p.Modified = time.Unix(mod, 0)
 	p.Accessed = con["accessed"]
@@ -151,7 +151,7 @@ func LoadDirectory(path string, suffix string) (e error) {
 			p := Post{
 				ID:      id,
 				Title:   id,
-				Content: getHTML(string(b)),
+				Content: template.HTML(string(b)),
 
 				// TODO: figure out how the fuck to get the *created time* from FILE!
 				// NOTE: seems to be an OS thang >> http://golang.org/pkg/os/#FileInfo 

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang='en'>
 	<meta charset='utf-8'>
-	<title>TOC</title>
+	<title>{{.Post.Title}}</title>
 	<link rel='stylesheet' href='/static/css/style.css' type='text/css' charset='utf-8'>
 </head>
 <body>
@@ -13,8 +13,9 @@
 			<div class='cell inverse barw'></div>
 			<div class='cell base'>
 				<article>
-					{{range .}} <li><a href='/p/{{.ID}}'>{{.Title}}</a> <sub class='mod'>{{.Accessed}}</sub></li> {{end}}
+					{{.Post.Content}}
 				</article>
+				<p class='mod'><cite>modified {{.Post.Modified}}</cite></p>
 			</div> <!-- /cell -->
 		</div> <!-- /row -->
 	</div> <!-- /table -->
