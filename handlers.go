@@ -1,12 +1,12 @@
 package main
 
 import (
+	store "github.com/dearing/blog/storage/redis"
+	"github.com/gorilla/mux"
 	"html/template"
 	"log"
 	"net/http"
-
-	store "github.com/dearing/blog/storage/redis"
-	"github.com/gorilla/mux"
+	"time"
 )
 
 type Page struct {
@@ -60,11 +60,64 @@ func contentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page := &Page{
-		Admin: false,
+		Admin: validateCookie(w, r),
 		Post:  p,
 	}
 
 	t.ExecuteTemplate(w, "post.html", page)
+}
+
+func editContentHandler(w http.ResponseWriter, r *http.Request) {
+
+	if !validateCookie(w, r) {
+		http.Redirect(w, r, "/", http.StatusUnauthorized)
+		return
+	}
+
+	t, err := template.ParseGlob(config.TemplateFolder + "/*")
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusNotFound)
+		log.Println(err)
+		return
+	}
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	p, err := store.GetRaw(id, false)
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusNotFound)
+		log.Println(err)
+		return
+	}
+
+	page := &Page{
+		Admin: validateCookie(w, r),
+		Post:  p,
+	}
+
+	t.ExecuteTemplate(w, "edit.html", page)
+}
+
+func saveContentHandler(w http.ResponseWriter, r *http.Request) {
+
+	if !validateCookie(w, r) {
+		http.Redirect(w, r, "/", http.StatusUnauthorized)
+		return
+	}
+
+	p := store.Post{
+		ID:       r.PostFormValue("id"),
+		Title:    r.PostFormValue("title"),
+		Content:  template.HTML(r.PostFormValue("content")), //posible bug, dunno yet
+		Modified: time.Now(),
+	}
+
+	log.Println(p)
+
+	store.New(p)
+
+	http.Redirect(w, r, "/p/"+p.ID, http.StatusFound)
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -83,9 +136,10 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	page := &Page{
-		Admin: false,
+		Admin: validateCookie(w, r),
 		Post:  p,
 	}
 
+	log.Println(page.Admin)
 	t.ExecuteTemplate(w, "post.html", page)
 }

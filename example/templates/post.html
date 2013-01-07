@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang='en'>
 	<meta charset='utf-8'>
-	<title>{{.Post.Title}}</title>
+	<title>{{.Admin}} // {{.Post.Title}}</title>
 	<link rel='stylesheet' href='/static/css/style.css' type='text/css' charset='utf-8'>
 </head>
 <body>
@@ -15,6 +15,7 @@
 				<article>
 					{{.Post.Content}}
 				</article>
+  {{if .Admin}} <p class='mod'><cite><a href='/e/{{.Post.ID}}'>edit post</a></cite></p> {{end}}
 				<p class='mod'><cite>modified {{.Post.Modified}}</cite></p>
 			</div> <!-- /cell -->
 		</div> <!-- /row -->

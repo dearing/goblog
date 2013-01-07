@@ -46,6 +46,9 @@ a:visited {
   min-width: 200px;
   width: 20%;
 }
+#editor {
+  border: 1px solid gray;
+}
 article {
   margin: 2em;
   min-width: 400px;

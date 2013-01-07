@@ -43,6 +43,8 @@ func main() {
 	r.HandleFunc("/", indexHandler)
 	r.HandleFunc("/toc", tocHandler)
 	r.HandleFunc("/p/{id}", contentHandler)
+	r.HandleFunc("/e/{id}", editContentHandler)
+	r.HandleFunc("/s/{id}", saveContentHandler)
 
 	r.HandleFunc("/login", loginHandler)
 	r.HandleFunc("/logout", logoutHander)

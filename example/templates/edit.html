@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang='en'>
+	<meta charset='utf-8'>
+	<title>{{.Admin}} // {{.Post.Title}}</title>
+	<link rel='stylesheet' href='/static/css/style.css' type='text/css' charset='utf-8'>
+	<link rel='stylesheet' href='/static/css/codemirror.css' type='text/css' charset='utf-8'>
+</head>
+<body>
+
+	{{template "editbar.html"}}
+
+	<div class='table'>
+		<div class='row'>
+			<div class='cell inverse barw'></div>
+			<div class='cell base'>
+				<article>
+					<form method="POST" action="/s/{{.Post.ID}}">
+						<input type="submit" name="Submit" value="Submit">
+						<input name='id' value='{{.Post.ID}}' />
+						<input name='title' value='{{.Post.Title}}' />
+						<textarea id='editor' name='content'>{{.Post.Content}}</textarea>
+					</form>
+				</article>
+
+				<p class='mod'><cite>modified {{.Post.Modified}}</cite></p>
+			</div> <!-- /cell -->
+		</div> <!-- /row -->
+	</div> <!-- /table -->
+
+	<script src="/static/js/codemirror.js"></script>
+	<script>
+		var myCodeMirror = CodeMirror.fromTextArea(editor);
+		myCodeMirror.Mode = "markdown";
+		myCodeMirror.LineNumbers = true;
+	</script>
+</body>
+</html>
