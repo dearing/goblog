@@ -220,7 +220,7 @@ func LoadDirectory(path string, suffix string) (e error) {
 				Modified: z.ModTime(),
 				Accessed: "0",
 			}
-			Set(p)
+			New(p)
 		}
 	}
 

@@ -113,9 +113,9 @@ func saveContentHandler(w http.ResponseWriter, r *http.Request) {
 		Modified: time.Now(),
 	}
 
-	log.Println(p)
-
 	store.New(p)
+
+	log.Println("saved", p.Title)
 
 	http.Redirect(w, r, "/p/"+p.ID, http.StatusFound)
 }
@@ -140,6 +140,5 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		Post:  p,
 	}
 
-	log.Println(page.Admin)
 	t.ExecuteTemplate(w, "post.html", page)
 }
