@@ -4,6 +4,7 @@
 	<title>{{.Admin}} // {{.Post.Title}}</title>
 	<link rel='stylesheet' href='/static/css/style.css' type='text/css' charset='utf-8'>
 	<link rel='stylesheet' href='/static/css/codemirror.css' type='text/css' charset='utf-8'>
+	<link rel='stylesheet' href='/static/css/twilight.css' type='text/css' charset='utf-8'>
 </head>
 <body>
 
@@ -29,9 +30,12 @@
 
 	<script src="/static/js/codemirror.js"></script>
 	<script>
-		var myCodeMirror = CodeMirror.fromTextArea(editor);
-		myCodeMirror.Mode = "markdown";
-		myCodeMirror.LineNumbers = true;
+		var editor = CodeMirror.fromTextArea(document.getElementById("editor"), 
+			{
+    			lineNumbers: true,
+    			theme:"twilight"
+  			}
+  		);
 	</script>
 </body>
 </html>
