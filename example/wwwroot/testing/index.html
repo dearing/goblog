@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  </head>
+  <body>
+    <div id='list'></div>
+    <textarea id='editor'>no results</textarea>
+    <script src='/testing/webblog.js'></script>
+    <script>
+      var list   = document.getElementById('list')
+      var editor = document.getElementById('editor')
+      list.innerHTML = "<ul><li onclick='function (e) {editor.value = this.value}'>readme</li></ul>";
+    </script>
+  </body>
+</html>​
