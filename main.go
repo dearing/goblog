@@ -40,16 +40,15 @@ func main() {
 
 	//	Setup our handlers and get cracking...
 	r := mux.NewRouter()
-	r.HandleFunc("/", indexHandler)
-	r.HandleFunc("/toc", tocHandler)
-	r.HandleFunc("/p/{id}", contentHandler)
-	r.HandleFunc("/e/{id}", editContentHandler)
-	r.HandleFunc("/s/{id}", saveContentHandler)
-
-	r.HandleFunc("/login", loginHandler)
-	r.HandleFunc("/logout", logoutHander)
-	r.HandleFunc("/callback", callbackHandler)
-	r.HandleFunc("/secret", secretPageHandler)
+	r.HandleFunc("/", indexHandler)             // index
+	r.HandleFunc("/toc", tocHandler)            // table of contents
+	r.HandleFunc("/p/{id}", contentHandler)     // display a post with title
+	r.HandleFunc("/e/{id}", editContentHandler) // edit a post
+	r.HandleFunc("/s/{id}", saveContentHandler) // save a post
+	r.HandleFunc("/login", loginHandler)        // fire up Outh2
+	r.HandleFunc("/logout", logoutHander)       // ''
+	r.HandleFunc("/callback", callbackHandler)  // Outh2 callback addy
+	r.HandleFunc("/secret", secretPageHandler)  // simple login testing handler
 
 	if config.EnableWWW {
 		r.PathPrefix("/").Handler(http.FileServer(http.Dir(config.WWWRoot)))
