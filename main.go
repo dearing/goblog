@@ -1,12 +1,27 @@
 package main
 
 import (
+	"flag"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 )
 
+var conf = flag.String("conf", "blog.conf", "JSON configuration")
+var gen = flag.Bool("gen", false, "generate a new config as conf is set")
+var config Config
+
 func main() {
+	flag.Parse()
+
+	if *gen {
+		config.GenerateConfig(*conf)
+		log.Println("generated new config at", *conf)
+		return
+	}
+
+	config.LoadConfig(*conf)
+
 	log.Println("started.")
 	pool = newPool("virtual-arch:6379", "")
 
@@ -26,10 +41,10 @@ func main() {
 	r.HandleFunc("/{uuid}", contentHandler) // display a post with title
 	//r.HandleFunc("/e/{id}", editContentHandler) // edit a post
 	//r.HandleFunc("/s/{id}", saveContentHandler) // save a post
-	//r.HandleFunc("/login", loginHandler)        // fire up Outh2
-	//r.HandleFunc("/logout", logoutHander)       // ''
-	//r.HandleFunc("/callback", callbackHandler)  // Outh2 callback addy
-	//r.HandleFunc("/secret", secretPageHandler)  // simple login testing handler
+	r.HandleFunc("/login", loginHandler)       // fire up Outh2
+	r.HandleFunc("/logout", logoutHander)      // ''
+	r.HandleFunc("/callback", callbackHandler) // Outh2 callback addy
+	r.HandleFunc("/secret", secretPageHandler) // simple login testing handler
 
 	http.Handle("/", r)
 	if err := http.ListenAndServe("localhost:9000", nil); err != nil {

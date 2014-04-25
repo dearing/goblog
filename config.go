@@ -7,9 +7,7 @@ import (
 )
 
 type Config struct {
-	Verbose   bool
-	EnableWWW bool
-
+	Verbose        bool
 	ContentFolder  string
 	TemplateFolder string
 	Suffix         string
@@ -41,7 +39,6 @@ func (c *Config) LoadConfig(path string) {
 		log.Panicln(err)
 	}
 
-	initOauth2()
 }
 
 // Generate a default config in the current directory for the user to manipulate.
@@ -51,13 +48,12 @@ func (c *Config) GenerateConfig(path string) {
 		ContentFolder:  "content",
 		TemplateFolder: "templates",
 		Suffix:         ".md",
-		WWWHost:        ":9002",
+		WWWHost:        ":9000",
 		WWWRoot:        "example",
 		RedisHost:      "localhost:6379",
 		RedisPass:      "",
 		RedisDB:        -1,
-		Verbose:        true,
-		EnableWWW:      false,
+		Verbose:        false,
 
 		// OAuth2
 		ClientID:     "",

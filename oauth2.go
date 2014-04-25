@@ -1,50 +1,29 @@
 package main
 
 import (
-	"crypto/sha1"
 	"encoding/json"
-	"fmt"
+	//"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
 
+	"code.google.com/p/go-uuid/uuid"
 	"code.google.com/p/goauth2/oauth"
 	"github.com/gorilla/securecookie"
 )
 
-var oauth_config oauth.Config    // OAuth2 configuration
-var NewState = make(chan string) // Channel to get new random strings from a goroutine started below
-
-// Designed to be started after we have read our main packages configuration for the important values.
-// also, start our go routine
-func initOauth2() {
-	oauth_config = oauth.Config{
-		ClientId:     config.ClientID,
-		ClientSecret: config.ClientSecret,
-		Scope:        "",
-		AuthURL:      "https://github.com/login/oauth/authorize",
-		TokenURL:     "https://github.com/login/oauth/access_token",
-		RedirectURL:  config.RedirectURL,
-	}
-
-	// CloudFlare's nifty snippet for generating a random string
-	// We use this for STATE data on authentication requests.
-	// NOTE: Okay, this would be one avenue of attack since it is guessable but seriously, wow.
-	//       One would do better to poison the server DNS or something equally difficult to circumvent this security.
-	// TODO: salt it just to have some fun.
-	go func() {
-		h := sha1.New()
-		for {
-			h.Write([]byte(time.Now().String()))
-			NewState <- fmt.Sprintf("%X", h.Sum(nil))
-		}
-	}()
-
+var oauth_config = oauth.Config{
+	ClientId:     config.ClientID,
+	ClientSecret: config.ClientSecret,
+	Scope:        "",
+	AuthURL:      "https://github.com/login/oauth/authorize",
+	TokenURL:     "https://github.com/login/oauth/access_token",
+	RedirectURL:  config.RedirectURL,
 }
 
-// The blockKey is optional, used to encrypt the cookie value -- set it to nil to not use encryption. 
-// If set, the length must correspond to the block size of the encryption algorithm. 
+// The blockKey is optional, used to encrypt the cookie value -- set it to nil to not use encryption.
+// If set, the length must correspond to the block size of the encryption algorithm.
 // For AES, used by default, valid lengths are 16, 24, or 32 bytes to select AES-128, AES-192, or AES-256.
 // SEE: http://www.gorillatoolkit.org/pkg/securecookie
 
@@ -56,9 +35,9 @@ var s = securecookie.New(hashKey, blockKey)
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	if !validateCookie(w, r) {
 
-		// Get a new random string for our STATE, store it in a secure cookie 
+		// Get a new random string for our STATE, store it in a secure cookie
 		// on the client and start our authentication process.
-		state := <-NewState
+		state := uuid.New()
 		setStateCookie(w, r, state)
 		url := oauth_config.AuthCodeURL(state)
 		http.Redirect(w, r, url, http.StatusFound)
@@ -196,7 +175,7 @@ func removeCookies(w http.ResponseWriter, r *http.Request) {
 }
 
 // Just returns the state stored in cookie, or "" if nadda.
-// BUG (jacob): What if github returns state:"" and we have nothing stored? 
+// BUG (jacob): What if github returns state:"" and we have nothing stored?
 //              Then one equals the other but code:?? is still needed to move on.
 //			    Still, seems a bit sloppy for my taste...
 func getState(w http.ResponseWriter, r *http.Request) (state string) {
