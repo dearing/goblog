@@ -13,14 +13,7 @@ import (
 	"github.com/gorilla/securecookie"
 )
 
-var oauth_config = oauth.Config{
-	ClientId:     config.ClientID,
-	ClientSecret: config.ClientSecret,
-	Scope:        "",
-	AuthURL:      "https://github.com/login/oauth/authorize",
-	TokenURL:     "https://github.com/login/oauth/access_token",
-	RedirectURL:  config.RedirectURL,
-}
+var oauth_config oauth.Config
 
 // The blockKey is optional, used to encrypt the cookie value -- set it to nil to not use encryption.
 // If set, the length must correspond to the block size of the encryption algorithm.

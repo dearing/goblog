@@ -1,6 +1,7 @@
 package main
 
 import (
+	"code.google.com/p/goauth2/oauth"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -37,6 +38,15 @@ func (c *Config) LoadConfig(path string) {
 
 	if err := json.Unmarshal(f, &c); err != nil {
 		log.Panicln(err)
+	}
+
+	oauth_config = oauth.Config{
+		ClientId:     config.ClientID,
+		ClientSecret: config.ClientSecret,
+		Scope:        "",
+		AuthURL:      "https://github.com/login/oauth/authorize",
+		TokenURL:     "https://github.com/login/oauth/access_token",
+		RedirectURL:  config.RedirectURL,
 	}
 
 }
