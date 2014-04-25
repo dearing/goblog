@@ -5,8 +5,17 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	//"time"
 )
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseGlob("template/*")
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusNotFound)
+		log.Println(err)
+		return
+	}
+	t.ExecuteTemplate(w, "index.html", nil)
+}
 
 func contentHandler(w http.ResponseWriter, r *http.Request) {
 

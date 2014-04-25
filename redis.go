@@ -38,25 +38,19 @@ type Page struct {
 	Title    string
 	Content  string
 	Author   string
-	Created  uint64
-	Modified uint64
+	Created  int64
+	Modified int64
 	Views    int64
-}
-
-var Default = &Page{
-	UUID:     "0",
-	Title:    "not found",
-	Content:  "no results",
-	Author:   "server",
-	Created:  0,
-	Modified: 0,
-	Views:    0,
 }
 
 func create() (p *Page) {
 	p = &Page{
 		UUID: uuid.New(),
 	}
+
+	p.Created = time.Now().Unix()
+	p.Modified = time.Now().Unix()
+	p.Views = 1
 
 	log.Printf("%s create\n", p.UUID)
 	return
@@ -66,14 +60,11 @@ func (p *Page) save() (err error) {
 	c := pool.Get()
 	defer c.Close()
 
-	c.Send("hset", p.UUID, "Author", p.Author)
-	c.Send("hset", p.UUID, "Content", p.Content)
-	c.Send("hset", p.UUID, "Created", p.Created)
-	c.Send("hset", p.UUID, "Title", p.Title)
-	c.Send("hset", p.UUID, "Modified", p.Modified)
-	c.Send("hset", p.UUID, "Views", p.Views)
-
-	c.Flush()
+	_, err = c.Do("HMSET", redis.Args{}.Add(p.UUID).AddFlat(p)...)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 
 	log.Printf("%s save\n", p.UUID)
 	return nil
@@ -84,12 +75,10 @@ func (p *Page) load() (err error) {
 	c := pool.Get()
 	defer c.Close()
 
-	reply, err := redis.Bool(c.Do("exists", p.UUID))
-	if err != nil {
-		return err
-	}
-
-	if reply {
+	if exists(p.UUID) {
+		c.Do("HINCRBY", p.UUID, "Views", 1)
+		reply, _ := redis.Values(c.Do("HGETALL", p.UUID))
+		redis.ScanStruct(reply, p)
 		log.Printf("%s load\n", p.UUID)
 	}
 
@@ -100,7 +89,7 @@ func (p *Page) delete() (err error) {
 	c := pool.Get()
 	defer c.Close()
 
-	reply, err := redis.Bool(c.Do("exists", p.UUID))
+	reply, err := redis.Bool(c.Do("EXISTS", p.UUID))
 	if err != nil {
 		return err
 	}

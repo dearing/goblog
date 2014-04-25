@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+var build string
 var conf = flag.String("conf", "blog.conf", "JSON configuration")
 var gen = flag.Bool("gen", false, "generate a new config as conf is set")
 var config Config
@@ -22,10 +23,10 @@ func main() {
 
 	config.LoadConfig(*conf)
 
-	log.Println("started.")
+	log.Printf("version %s\n", build)
 	pool = newPool("virtual-arch:6379", "")
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 1; i++ {
 		p := create()
 		p.Title = "Test"
 		p.Content = "test content :: " + p.UUID
@@ -36,11 +37,8 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	//r.HandleFunc("/", indexHandler) // index
-	//r.HandleFunc("/toc", tocHandler)            // table of contents
-	r.HandleFunc("/p/{uuid}", contentHandler) // display a post with title
-	//r.HandleFunc("/e/{id}", editContentHandler) // edit a post
-	//r.HandleFunc("/s/{id}", saveContentHandler) // save a post
+	r.HandleFunc("/", indexHandler)            // index
+	r.HandleFunc("/p/{uuid}", contentHandler)  // display a post with title
 	r.HandleFunc("/login", loginHandler)       // fire up Outh2
 	r.HandleFunc("/logout", logoutHander)      // ''
 	r.HandleFunc("/callback", callbackHandler) // Outh2 callback addy
