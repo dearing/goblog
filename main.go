@@ -23,7 +23,7 @@ func main() {
 
 	config.LoadConfig(*conf)
 
-	log.Printf("version %s\n", build)
+	log.Printf("version %s\nzzzzzzzzh            ", build)
 	pool = newPool("virtual-arch:6379", "")
 
 	for i := 0; i < 1; i++ {

@@ -38,7 +38,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 
 		// No need to reauthenticate if our present cookie is still good.
-		http.Redirect(w, r, "/", http.StatusAccepted)
+		//http.Redirect(w, r, "/", http.StatusAccepted)
+		errorHandler(w, r, 202)
 	}
 }
 
@@ -52,7 +53,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 		if config.Verbose {
 			log.Println("Client's stored state did not match post data from Github. Failing login attempt.")
 		}
-		http.Redirect(w, r, "/", http.StatusUnauthorized)
+		errorHandler(w, r, 401)
 	}
 
 	// We attempt to exchange the temp CODE we got for a real access token...
@@ -60,7 +61,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	_, e := t.Exchange(code)
 	if e != nil {
 		log.Println(e)
-		http.Redirect(w, r, "/", http.StatusUnauthorized)
+		errorHandler(w, r, 401)
 	}
 	c := t.Client()
 
@@ -75,14 +76,14 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	contents, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
-		http.Redirect(w, r, "/", http.StatusInternalServerError)
+		errorHandler(w, r, 500)
 	}
 
 	// We have a valid Github USER but is it our ADMIN?
 	var info map[string]interface{}
 	if err := json.Unmarshal(contents, &info); err != nil {
 		log.Println(err)
-		http.Redirect(w, r, "/", http.StatusInternalServerError)
+		errorHandler(w, r, 500)
 	}
 
 	// Now here we look at the login field in the JSON the server sent us for our ADMIN check.
@@ -94,7 +95,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 		// USER ain't our ADMIN, move along.
 		log.Println("Github user did not match admin configuration.")
 		removeCookies(w, r)
-		http.Redirect(w, r, "/", http.StatusUnauthorized)
+		errorHandler(w, r, 401)
 
 	} else {
 
@@ -102,7 +103,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("Admin logged in.")
 		removeCookies(w, r)
 		setAuthCookie(w, r, login)
-		http.Redirect(w, r, "/", http.StatusAccepted)
+		errorHandler(w, r, 202)
 	}
 
 }
@@ -116,9 +117,9 @@ func logoutHander(w http.ResponseWriter, r *http.Request) {
 // SECRET page for testing only; no need to redirect to login
 func secretPageHandler(w http.ResponseWriter, r *http.Request) {
 	if validateCookie(w, r) {
-		http.Redirect(w, r, "/", http.StatusAccepted)
+		errorHandler(w, r, 202)
 	} else {
-		http.Redirect(w, r, "/", http.StatusUnauthorized)
+		errorHandler(w, r, 401)
 	}
 }
 

@@ -7,10 +7,22 @@ import (
 	"net/http"
 )
 
+type ErrorPage struct {
+	Code int
+	Text string
+}
+
+func generateError(code int) *ErrorPage {
+	return &ErrorPage{
+		Code: code,
+		Text: http.StatusText(code),
+	}
+}
+
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseGlob("template/*")
 	if err != nil {
-		http.Redirect(w, r, "/", http.StatusNotFound)
+		errorHandler(w, r, 404)
 		log.Println(err)
 		return
 	}
@@ -30,7 +42,7 @@ func contentHandler(w http.ResponseWriter, r *http.Request) {
 	uuid := vars["uuid"]
 
 	if !exists(uuid) {
-		http.Redirect(w, r, "/", http.StatusNotFound)
+		errorHandler(w, r, 404)
 		return
 	}
 
@@ -39,4 +51,20 @@ func contentHandler(w http.ResponseWriter, r *http.Request) {
 	p.load()
 
 	t.ExecuteTemplate(w, "page.html", p)
+}
+
+func errorHandler(w http.ResponseWriter, r *http.Request, code int) {
+
+	e := generateError(code)
+
+	t, err := template.ParseGlob("template/*")
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusNotFound)
+		log.Println(err)
+		return
+	}
+	log.Println(t)
+
+	//http.Error(w, e.Text, e.Code)
+	t.ExecuteTemplate(w, "error.html", e)
 }
