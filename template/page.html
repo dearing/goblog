@@ -2,9 +2,13 @@
 <html>
 <head><title>{{.Title}}</title></head>
 <body>
-<pre>{{.Content}}</pre>
-<br />
-<pre>created by {{.Author}} on {{.Created}}</pre>
-<pre>viewed {{.Views}} times</pre>
+<style>
+	html, body {margin:25; color:white;background-color: black;font-family: monospace; }
+	pre {white-space: pre-wrap;}
+</style>
+<h1 style="color:grey">{{.Title}}</h1>
+<pre >{{.Content}}</pre>
+<pre style="color:grey">created by {{.Author}} on {{.Created}}</pre>
+<pre style="color:grey">viewed {{.Views}} times</pre>
 </body>
 </html>
