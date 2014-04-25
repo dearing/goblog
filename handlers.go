@@ -1,48 +1,37 @@
 package main
 
 import (
-	store "github.com/dearing/blog/storage/redis"
 	"github.com/gorilla/mux"
 	"html/template"
 	"log"
 	"net/http"
-	"time"
 )
 
-type Page struct {
-	Admin bool
-	Post  store.Post
+type ErrorPage struct {
+	Code int
+	Text string
 }
 
-func tocHandler(w http.ResponseWriter, r *http.Request) {
+func generateError(code int) *ErrorPage {
+	return &ErrorPage{
+		Code: code,
+		Text: http.StatusText(code),
+	}
+}
 
-	t, err := template.ParseGlob(config.TemplateFolder + "/*")
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseGlob("template/*")
 	if err != nil {
-		http.Redirect(w, r, "/", http.StatusNotFound)
+		errorHandler(w, r, 404)
 		log.Println(err)
 		return
 	}
-
-	keys := store.GetPosts()
-	posts := make(map[string]store.Post)
-	for _, key := range keys.Val() {
-
-		p, err := store.Get(key, false)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-
-		posts[key] = p
-
-	}
-
-	t.ExecuteTemplate(w, "toc.html", posts)
+	t.ExecuteTemplate(w, "index.html", nil)
 }
 
 func contentHandler(w http.ResponseWriter, r *http.Request) {
 
-	t, err := template.ParseGlob(config.TemplateFolder + "/*")
+	t, err := template.ParseGlob("template/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Println(err)
@@ -50,95 +39,32 @@ func contentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vars := mux.Vars(r)
-	id := vars["id"]
+	uuid := vars["uuid"]
 
-	p, err := store.Get(id, true)
-	if err != nil {
-		http.Redirect(w, r, "/", http.StatusNotFound)
-		log.Println(err)
+	if !exists(uuid) {
+		errorHandler(w, r, 404)
 		return
 	}
 
-	page := &Page{
-		Admin: validateCookie(w, r),
-		Post:  p,
-	}
+	p := &Page{}
+	p.UUID = uuid
+	p.load()
 
-	t.ExecuteTemplate(w, "post.html", page)
+	t.ExecuteTemplate(w, "page.html", p)
 }
 
-func editContentHandler(w http.ResponseWriter, r *http.Request) {
+func errorHandler(w http.ResponseWriter, r *http.Request, code int) {
 
-	if !validateCookie(w, r) {
-		http.Redirect(w, r, "/", http.StatusUnauthorized)
-		return
-	}
+	e := generateError(code)
 
-	t, err := template.ParseGlob(config.TemplateFolder + "/*")
+	t, err := template.ParseGlob("template/*")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 		log.Println(err)
 		return
 	}
+	log.Println(t)
 
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	p, err := store.GetRaw(id, false)
-	if err != nil {
-		http.Redirect(w, r, "/", http.StatusNotFound)
-		log.Println(err)
-		return
-	}
-
-	page := &Page{
-		Admin: validateCookie(w, r),
-		Post:  p,
-	}
-
-	t.ExecuteTemplate(w, "edit.html", page)
-}
-
-func saveContentHandler(w http.ResponseWriter, r *http.Request) {
-
-	if !validateCookie(w, r) {
-		http.Redirect(w, r, "/", http.StatusUnauthorized)
-		return
-	}
-
-	p := store.Post{
-		ID:       r.PostFormValue("id"),
-		Title:    r.PostFormValue("title"),
-		Content:  template.HTML(r.PostFormValue("content")), //posible bug, dunno yet
-		Modified: time.Now(),
-	}
-
-	store.New(p)
-
-	log.Println("saved", p.Title)
-
-	http.Redirect(w, r, "/p/"+p.ID, http.StatusFound)
-}
-
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-
-	t, err := template.ParseGlob(config.TemplateFolder + "/*")
-	if err != nil {
-		http.Redirect(w, r, "/", http.StatusNotFound)
-		log.Println(err)
-		return
-	}
-
-	p, err := store.GetLatest()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	page := &Page{
-		Admin: validateCookie(w, r),
-		Post:  p,
-	}
-
-	t.ExecuteTemplate(w, "post.html", page)
+	//http.Error(w, e.Text, e.Code)
+	t.ExecuteTemplate(w, "error.html", e)
 }

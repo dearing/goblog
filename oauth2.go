@@ -1,50 +1,22 @@
 package main
 
 import (
-	"crypto/sha1"
 	"encoding/json"
-	"fmt"
+	//"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
 
+	"code.google.com/p/go-uuid/uuid"
 	"code.google.com/p/goauth2/oauth"
 	"github.com/gorilla/securecookie"
 )
 
-var oauth_config oauth.Config    // OAuth2 configuration
-var NewState = make(chan string) // Channel to get new random strings from a goroutine started below
+var oauth_config oauth.Config
 
-// Designed to be started after we have read our main packages configuration for the important values.
-// also, start our go routine
-func initOauth2() {
-	oauth_config = oauth.Config{
-		ClientId:     config.ClientID,
-		ClientSecret: config.ClientSecret,
-		Scope:        "",
-		AuthURL:      "https://github.com/login/oauth/authorize",
-		TokenURL:     "https://github.com/login/oauth/access_token",
-		RedirectURL:  config.RedirectURL,
-	}
-
-	// CloudFlare's nifty snippet for generating a random string
-	// We use this for STATE data on authentication requests.
-	// NOTE: Okay, this would be one avenue of attack since it is guessable but seriously, wow.
-	//       One would do better to poison the server DNS or something equally difficult to circumvent this security.
-	// TODO: salt it just to have some fun.
-	go func() {
-		h := sha1.New()
-		for {
-			h.Write([]byte(time.Now().String()))
-			NewState <- fmt.Sprintf("%X", h.Sum(nil))
-		}
-	}()
-
-}
-
-// The blockKey is optional, used to encrypt the cookie value -- set it to nil to not use encryption. 
-// If set, the length must correspond to the block size of the encryption algorithm. 
+// The blockKey is optional, used to encrypt the cookie value -- set it to nil to not use encryption.
+// If set, the length must correspond to the block size of the encryption algorithm.
 // For AES, used by default, valid lengths are 16, 24, or 32 bytes to select AES-128, AES-192, or AES-256.
 // SEE: http://www.gorillatoolkit.org/pkg/securecookie
 
@@ -56,9 +28,9 @@ var s = securecookie.New(hashKey, blockKey)
 func loginHandler(w http.ResponseWriter, r *http.Request) {
 	if !validateCookie(w, r) {
 
-		// Get a new random string for our STATE, store it in a secure cookie 
+		// Get a new random string for our STATE, store it in a secure cookie
 		// on the client and start our authentication process.
-		state := <-NewState
+		state := uuid.New()
 		setStateCookie(w, r, state)
 		url := oauth_config.AuthCodeURL(state)
 		http.Redirect(w, r, url, http.StatusFound)
@@ -66,7 +38,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 
 		// No need to reauthenticate if our present cookie is still good.
-		http.Redirect(w, r, "/", http.StatusAccepted)
+		//http.Redirect(w, r, "/", http.StatusAccepted)
+		errorHandler(w, r, 202)
 	}
 }
 
@@ -80,7 +53,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 		if config.Verbose {
 			log.Println("Client's stored state did not match post data from Github. Failing login attempt.")
 		}
-		http.Redirect(w, r, "/", http.StatusUnauthorized)
+		errorHandler(w, r, 401)
 	}
 
 	// We attempt to exchange the temp CODE we got for a real access token...
@@ -88,7 +61,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	_, e := t.Exchange(code)
 	if e != nil {
 		log.Println(e)
-		http.Redirect(w, r, "/", http.StatusUnauthorized)
+		errorHandler(w, r, 401)
 	}
 	c := t.Client()
 
@@ -103,14 +76,14 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	contents, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
-		http.Redirect(w, r, "/", http.StatusInternalServerError)
+		errorHandler(w, r, 500)
 	}
 
 	// We have a valid Github USER but is it our ADMIN?
 	var info map[string]interface{}
 	if err := json.Unmarshal(contents, &info); err != nil {
 		log.Println(err)
-		http.Redirect(w, r, "/", http.StatusInternalServerError)
+		errorHandler(w, r, 500)
 	}
 
 	// Now here we look at the login field in the JSON the server sent us for our ADMIN check.
@@ -122,7 +95,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 		// USER ain't our ADMIN, move along.
 		log.Println("Github user did not match admin configuration.")
 		removeCookies(w, r)
-		http.Redirect(w, r, "/", http.StatusUnauthorized)
+		errorHandler(w, r, 401)
 
 	} else {
 
@@ -130,7 +103,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("Admin logged in.")
 		removeCookies(w, r)
 		setAuthCookie(w, r, login)
-		http.Redirect(w, r, "/", http.StatusAccepted)
+		errorHandler(w, r, 202)
 	}
 
 }
@@ -144,9 +117,9 @@ func logoutHander(w http.ResponseWriter, r *http.Request) {
 // SECRET page for testing only; no need to redirect to login
 func secretPageHandler(w http.ResponseWriter, r *http.Request) {
 	if validateCookie(w, r) {
-		http.Redirect(w, r, "/", http.StatusAccepted)
+		errorHandler(w, r, 202)
 	} else {
-		http.Redirect(w, r, "/", http.StatusUnauthorized)
+		errorHandler(w, r, 401)
 	}
 }
 
@@ -196,7 +169,7 @@ func removeCookies(w http.ResponseWriter, r *http.Request) {
 }
 
 // Just returns the state stored in cookie, or "" if nadda.
-// BUG (jacob): What if github returns state:"" and we have nothing stored? 
+// BUG (jacob): What if github returns state:"" and we have nothing stored?
 //              Then one equals the other but code:?? is still needed to move on.
 //			    Still, seems a bit sloppy for my taste...
 func getState(w http.ResponseWriter, r *http.Request) (state string) {
