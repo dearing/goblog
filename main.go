@@ -23,14 +23,14 @@ func main() {
 
 	config.LoadConfig(*conf)
 
-	log.Printf("version %s\nzzzzzzzzh            ", build)
-	pool = newPool("virtual-arch:6379", "")
+	log.Printf("version %s", build)
+	pool = newPool(config.RedisHost, config.RedisPass)
 
 	for i := 0; i < 1; i++ {
 		p := create()
 		p.Title = "Test"
 		p.Content = "test content :: " + p.UUID
-		p.Author = "jacob.dearing@gmail.com"
+		p.Author = "somebody"
 		p.save()
 		p.load()
 		//p.delete()
@@ -45,8 +45,8 @@ func main() {
 	r.HandleFunc("/secret", secretPageHandler) // simple login testing handler
 
 	http.Handle("/", r)
-	if err := http.ListenAndServe("localhost:9000", nil); err != nil {
-		log.Panicln("%v\n", err)
+	if err := http.ListenAndServe(config.WWWHost, nil); err != nil {
+		log.Panicf("%v\n", err)
 	}
 
 }
