@@ -2,11 +2,10 @@ blog
 ====
 **still in development**
 
-blogging with go, markdown, redis and Oauth2
+blogging with go, redis and Oauth2
 
 about
 -----
-- markdown posts
 - redis for caching and metrics
 - github oauth2 for administration
 - more fun with go
@@ -31,18 +30,16 @@ example config
 ```
 {
 	"Verbose": true,
-	"EnableWWW": false,
 	"ContentFolder": "content",
 	"TemplateFolder": "templates",
 	"Suffix": ".md",
 	"WWWHost": ":9002",
-	"WWWRoot": "example",
 	"RedisHost": "localhost:6379",
 	"RedisPass": "",
 	"RedisDB": -1,
-	"ClientID": "",
-	"ClientSecret": "",
+	"ClientID": "abcdef",
+	"ClientSecret": "abcdef0123456",
 	"RedirectURL": "/callback",
-	"AdminLogin": ""
+	"AdminLogin": "some_github_username"
 }
 ```
